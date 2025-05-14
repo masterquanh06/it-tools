@@ -415,6 +415,11 @@ tools:
     description: >-
       Konvertiere eine IP-Adresse in Dezimal, Binär, Hexadezimal oder sogar in
       IPv6.
+  check-uid-fb:
+    title: UID-Checker
+    description: >-
+      Überprüfe, ob eine UID (User ID) auf Facebook existiert oder nicht. Dies
+      ist ein Client-seitiges Tool, das keine Daten an einen Server sendet.
   text-statistics:
     title: Textstatistiken
     description: >-

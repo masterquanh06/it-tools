@@ -346,7 +346,9 @@ tools:
   ipv4-address-converter:
     title: Chuyển đổi địa chỉ Ipv4
     description: Chuyển đổi địa chỉ ip thành số thập phân, nhị phân, thập lục phân hoặc thậm chí thành ipv6
-
+  check-uid-fb: 
+    title: Kiểm tra UID Facebook
+    description: Kiểm tra xem một UID Facebook có tồn tại hay không. Công cụ này sẽ kiểm tra UID và trả về thông tin về người dùng.
   text-statistics:
     title: Thống kê văn bản
     description: Lấy thông tin về một văn bản, số ký tự, số từ, kích thước của nó, ...

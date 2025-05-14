@@ -361,6 +361,9 @@ tools:
     title: Tekst statistikk
     description: Få informasjonen om en tekst, antall karakterer, antall ord, størrelsen i bytes, etc.
 
+  check-uid-fb:
+    title: Sjekk UID Facebook
+    description: Sjekk om en UID (bruker-ID) eksisterer på Facebook.
   text-to-nato-alphabet:
     title: Tekst til NATO alfabetet
     description: Transformer teksten til det NATO fonetiske alfabetet for muntlig gjengivelse.
