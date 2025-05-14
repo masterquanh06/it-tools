@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { forEach } from "lodash";
 import { ref } from "vue";
 
 const uids = ref<string[]>([]); // To store multiple UIDs
@@ -8,8 +9,6 @@ const loading = ref(false);
 const error = ref("");
 const liveCount = ref(0); // Counter for LIVE UIDs
 const dieCount = ref(0); // Counter for DIE UIDs
-
-// Use the obtained App Access Token (for testing only)
 
 async function checkLiveUid(uid: string): Promise<boolean> {
   if (!/^\d+$/.test(uid)) {
@@ -36,32 +35,47 @@ async function handleCheck() {
     return;
   }
 
-  // Split the input into an array of UIDs
   uids.value = inputUids.value
     .trim()
     .split("\n")
-    .filter((uid) => uid.trim() !== "");
+    .map((uid) => uid.trim())
+    .filter((uid) => uid !== "");
+
   if (uids.value.length === 0) {
     error.value = "Vui lòng nhập ít nhất một UID hợp lệ.";
     return;
   }
 
   loading.value = true;
+
+  const BATCH_SIZE = 500; // kiểm tra 20 UID/lượt
+  const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
   try {
-    for (const uid of uids.value) {
-      try {
-        const isLive = await checkLiveUid(uid.trim());
-        results.value.push({ uid: uid.trim(), live: isLive });
-        if (isLive) {
-          liveCount.value += 1;
-        } else {
-          dieCount.value += 1;
+    const tempResults: { uid: string; live: boolean }[] = [];
+
+    for (let i = 0; i < uids.value.length; i += BATCH_SIZE) {
+      const batch = uids.value.slice(i, i + BATCH_SIZE);
+
+      const promises = batch.map(async (uid) => {
+        try {
+          const isLive = await checkLiveUid(uid);
+          return { uid, live: isLive };
+        } catch {
+          return { uid, live: false };
         }
-      } catch (err) {
-        results.value.push({ uid: uid.trim(), live: false });
-        dieCount.value += 1;
-      }
+      });
+
+      const batchResults = await Promise.all(promises);
+      tempResults.push(...batchResults);
+
+      // Delay giữa các batch để tránh bị chặn (tùy chỉnh)
+      await delay(300); // 300ms giữa các batch
     }
+
+    results.value = tempResults;
+    liveCount.value = tempResults.filter((r) => r.live).length;
+    dieCount.value = tempResults.filter((r) => !r.live).length;
   } catch (err) {
     error.value =
       err instanceof Error ? err.message : "Có lỗi xảy ra khi kiểm tra UID.";
@@ -100,166 +114,356 @@ function filterResults(type: "live" | "die") {
 
 <template>
   <div class="check-live-uid">
-    <div class="sections">
-      <div class="section">
-        <textarea
-          v-model="inputUids"
-          placeholder="Nhập UID (mỗi UID trên một dòng)"
-          :disabled="loading"
-          rows="10"
-        ></textarea>
+    <!-- Ô nhập UID -->
+    <div class="top-section">
+      <div class="input-header">
+        <label class="label">Clone</label>
+        <input class="uid-count" :value="uids.length" disabled />
       </div>
-      <div class="section">
-        <textarea
-          :value="results.map((r) => r.uid).join('\n')"
-          placeholder="Kết quả"
-          readonly
-          rows="10"
-        ></textarea>
-      </div>
-    </div>
-    <div class="controls">
-      <div class="counters">
-        <span class="live-counter">LIVE {{ liveCount }}</span>
-        <span class="die-counter">DIE {{ dieCount }}</span>
-      </div>
-      <div class="buttons">
-        <button @click="filterResults('live')" :disabled="loading">
-          Filter
-        </button>
-        <button @click="removeDuplicates" :disabled="loading">
+
+      <textarea
+        v-model="inputUids"
+        placeholder="Nhập UID (mỗi dòng)"
+        :disabled="loading"
+        rows="15"
+        class="input-textarea"
+      ></textarea>
+
+      <div class="options">
+        <label class="checkbox-label">
+          <input type="checkbox" @change="removeDuplicates" :disabled="loading" />
           Remove duplicate
-        </button>
-        <button @click="handleCheck" :disabled="loading">CHECK LIVE</button>
-        <button
-          @click="handleCopy('live')"
-          :disabled="loading || liveCount === 0"
-          class="copy-live"
-        >
-          Copy
-        </button>
-        <button
-          @click="handleCopy('die')"
-          :disabled="loading || dieCount === 0"
-          class="copy-die"
-        >
-          Copy
-        </button>
+        </label>
+        <div class="button-group">
+          <button @click="filterResults('live')" :disabled="loading">Filter</button>
+          <button @click="handleCheck" :disabled="loading">Check Live</button>
+        </div>
+      </div>
+
+      <!-- Kết quả -->
+      <div class="results-section">
+        <!-- LIVE -->
+        <div class="result-box live-box">
+          <div class="result-header">
+            <span class="live-counter">LIVE {{ liveCount }}</span>
+            <button @click="handleCopy('live')" :disabled="liveCount === 0 || loading">Copy</button>
+          </div>
+          <textarea
+            readonly
+            :value="results.filter(r => r.live).map(r => r.uid).join('\n')"
+            rows="15"
+            class="result-textarea"
+          ></textarea>
+        </div>
+
+        <!-- DIE -->
+        <div class="result-box die-box">
+          <div class="result-header">
+            <span class="die-counter">DIE {{ dieCount }}</span>
+            <button @click="handleCopy('die')" :disabled="dieCount === 0 || loading">Copy</button>
+          </div>
+          <textarea
+            readonly
+            :value="results.filter(r => !r.live).map(r => r.uid).join('\n')"
+            rows="15"
+            class="result-textarea"
+          ></textarea>
+        </div>
       </div>
     </div>
+
+    <!-- Lỗi -->
     <div v-if="error" class="error">Lỗi: {{ error }}</div>
   </div>
 </template>
 
 <style scoped>
 .check-live-uid {
-  min-width: 1000px;
-  margin: 0;
   padding: 16px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-    Ubuntu, Cantarell, sans-serif;
-  background-color: #4a4a4a; /* Changed to gray */
+  background-color: #2f2f2f;
   color: #fff;
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
   box-sizing: border-box;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
 }
 
-.sections {
-  display: flex;
-  gap: 16px;
+.top-section {
   margin-bottom: 16px;
 }
 
-.section {
-  flex: 1;
+.input-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
-textarea {
-  width: 100%;
-  padding: 8px;
-  background-color: #5a5a5a; /* Adjusted to a slightly lighter gray for contrast */
+.label {
+  font-weight: bold;
+  margin-right: 8px;
+  color: #ccc;
+}
+
+.uid-count {
+  background-color: #444;
   color: #fff;
-  border: 1px solid #6a6a6a; /* Adjusted border color for contrast */
+  border: 1px solid #555;
+  padding: 6px 10px;
+  width: 80px;
+  text-align: center;
   border-radius: 4px;
-  box-sizing: border-box;
-  resize: none;
-  font-size: 16px;
+  font-size: 14px;
 }
 
-textarea:disabled {
-  background-color: #3a3a3a; /* Adjusted for disabled state */
+.input-textarea {
+  width: 100%;
+  background-color: #333;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 10px;
+  resize: none;
+  font-size: 14px;
+  height: 300px;
+}
+
+.input-textarea:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.input-textarea:disabled {
+  background: #444;
   cursor: not-allowed;
 }
 
-.controls {
+.options {
+  margin-top: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 10px;
 }
 
-.counters {
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #ccc;
+}
+
+.checkbox-label input {
+  margin-right: 6px;
+}
+
+.button-group {
   display: flex;
   gap: 8px;
-}
-
-.live-counter {
-  background-color: #28a745;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.die-counter {
-  background-color: #dc3545;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.buttons {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 
 button {
   padding: 8px 16px;
+  font-size: 14px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.2s;
-  font-size: 14px;
-}
-
-button:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
-
-button:not(:disabled) {
   background-color: #007bff;
-  color: white;
+  color: #fff;
+  transition: background-color 0.2s;
 }
 
 button:hover:not(:disabled) {
   background-color: #0056b3;
 }
 
-.copy-live {
-  background-color: #28a745 !important;
+button:disabled {
+  background-color: #666;
+  cursor: not-allowed;
 }
 
-.copy-live:hover:not(:disabled) {
-  background-color: #218838 !important;
+.results-section {
+  display: flex;
+  gap: 30px;
+  margin-top: 20px;
 }
 
-.copy-die {
-  background-color: #dc3545 !important;
+.result-box {
+  flex: 1;
+  background-color: #333;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #555;
 }
 
-.copy-die:hover:not(:disabled) {
-  background-color: #c82333 !important;
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.live-counter {
+  background-color: #28a745;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.die-counter {
+  background-color: #dc3545;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.result-box button {
+  padding: 6px 12px;
+  background-color: #6c757d;
+  color: #fff;
+}
+
+.result-box button:hover:not(:disabled) {
+  background-color: #5a6268;
+}
+
+.result-textarea {
+  width: 100%;
+  height: 300px;
+  resize: none;
+  background-color: #444;
+  border: 1px solid #555;
+  color: #fff;
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.error {
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #dc3545;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .check-live-uid {
+    max-width: 1000px;
+  }
+
+  .results-section {
+    gap: 20px;
+  }
+
+  .input-textarea,
+  .result-textarea {
+    height: 250px;
+  }
+}
+
+@media (max-width: 768px) {
+  .check-live-uid {
+    padding: 12px;
+    max-width: 100%;
+  }
+
+  .results-section {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .result-box {
+    width: 100%;
+  }
+
+  .input-textarea,
+  .result-textarea {
+    height: 200px;
+    font-size: 12px;
+  }
+
+  .options {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .button-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  button {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .live-counter,
+  .die-counter {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  .uid-count {
+    width: 60px;
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .error {
+    font-size: 12px;
+    padding: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .check-live-uid {
+    padding: 8px;
+  }
+
+  .input-textarea,
+  .result-textarea {
+    height: 150px;
+    font-size: 10px;
+  }
+
+  .results-section {
+    gap: 10px;
+  }
+
+  .uid-count {
+    width: 50px;
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+
+  .button-group {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  button {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .live-counter,
+  .die-counter {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  .error {
+    font-size: 10px;
+    padding: 6px;
+  }
+
+  .options {
+    gap: 6px;
+  }
 }
 </style>
