@@ -34,7 +34,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const inputUrls = ref('')
 const results = ref([])
@@ -44,10 +44,11 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 
 const failedUrls = computed(() => {
+    const successfulUrls = results.value.map(r => r.url)
     return inputUrls.value
         .split('\n')
-        .filter(url => !results.value.some(r => r.uid && url.includes(r.uid)))
-        .filter(url => url.trim())
+        .map(url => url.trim())
+        .filter(url => url && !successfulUrls.includes(url))
 })
 
 const extractUids = async () => {
@@ -62,11 +63,10 @@ const extractUids = async () => {
     for (const url of urls) {
         const result = await fetchUidFromSalekit(url)
         if (result && result.uid) {
-            results.value.push({ uid: result.uid, displayText: ${url} [${result.uid}] })
+            results.value.push({ uid: result.uid, displayText: `${url} [${result.uid}]`, url })
         } else {
             failedCount.value++
         }
-        // Độ trễ 500ms để tránh giới hạn API
         await new Promise(resolve => setTimeout(resolve, 500))
     }
 
@@ -75,20 +75,18 @@ const extractUids = async () => {
 
 const fetchUidFromSalekit = async (url) => {
     try {
-        const formattedUrl = url.match(/^https?:\/\//) ? url : https://${url}
+        const formattedUrl = url.match(/^https?:\/\//) ? url : `https://${url}`
         
         const response = await fetch('https://fchat-app.salekit.com:4039/api/v1/facebook/get_uid', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: new URLSearchParams({
-                'link': formattedUrl
-            })
+            body: new URLSearchParams({ 'link': formattedUrl })
         })
 
         if (!response.ok) {
-            throw new Error(HTTP error! Status: ${response.status})
+            throw new Error(`HTTP error! Status: ${response.status}`)
         }
 
         const data = await response.json()
@@ -103,8 +101,8 @@ const fetchUidFromSalekit = async (url) => {
     } catch (error) {
         errorMessage.value = error.message.includes('Failed to fetch')
             ? 'Không thể kết nối tới API (có thể do CORS, mạng, hoặc server)'
-            : Lỗi: ${error.message}
-        console.error('Error fetching UID from salekit:', error)
+            : `Lỗi: ${error.message}`
+        console.error('Error fetching UID from salekit:', error);
         return null
     }
 }
@@ -123,6 +121,7 @@ const copyFailed = () => {
     })
 }
 </script>
+
 
 <style scoped>
 .container {
