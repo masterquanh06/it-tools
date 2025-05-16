@@ -15,7 +15,7 @@
       <div class="search-container">
         <input 
           v-model="searchQuery" 
-          placeholder="Search emoji..." 
+          placeholder="Search emoji by name..." 
           class="search-input"
           @input="filterEmojis"
         />
@@ -28,10 +28,11 @@
             v-for="(emoji, emojiIndex) in filteredEmojis" 
             :key="emojiIndex" 
             class="emoji-item"
-            @click="toggleSelection(emoji)"
-            :class="{ selected: selectedEmojis.includes(emoji) }"
+            @click="copyAndSelect(emoji.emoji)"
+            :class="{ selected: selectedEmojis.includes(emoji.emoji) }"
+            :title="emoji.name"
           >
-            {{ emoji }}
+            {{ emoji.emoji }}
           </span>
         </div>
       </div>
@@ -45,63 +46,192 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref } from 'vue';
 
-const selectedCategory = ref(null)
-const searchQuery = ref('')
-const selectedEmojis = ref([])
+// Emoji name mapping (subset for brevity; expand as needed)
+const emojiNames = {
+  "😀": "Grinning Face",
+  "😁": "Beaming Face",
+  "😂": "Face with Tears of Joy",
+  "🤣": "Rolling on the Floor Laughing",
+  "😃": "Smiling Face with Big Eyes",
+  "😄": "Smiling Face with Smiling Eyes",
+  "😅": "Smiling Face with Sweat",
+  "😆": "Grinning Squinting Face",
+  "😉": "Winking Face",
+  "😊": "Smiling Face",
+  "👋": "Waving Hand",
+  "🤚": "Raised Back of Hand",
+  "🖐️": "Hand with Fingers Splayed",
+  "✋": "Raised Hand",
+  "🖖": "Vulcan Salute",
+  "👌": "OK Hand",
+  "❤️": "Red Heart",
+  "🧡": "Orange Heart",
+  "💛": "Yellow Heart",
+  "💚": "Green Heart",
+  "🍎": "Red Apple",
+  "🍏": "Green Apple",
+  "🍐": "Pear",
+  "🍊": "Tangerine",
+  "🍋": "Lemon",
+  "🐶": "Dog Face",
+  "🐱": "Cat Face",
+  "🐭": "Mouse Face",
+  "🐹": "Hamster",
+  "🐰": "Rabbit",
+  "🌱": "Seedling",
+  "🪴": "Potted Plant",
+  "🌿": "Herb",
+  "☘️": "Shamrock",
+  "🍀": "Four Leaf Clover",
+  "🚗": "Car",
+  "🚕": "Taxi",
+  "🚙": "Sport Utility Vehicle",
+  "🚌": "Bus",
+  "🚎": "Trolleybus",
+  "⌚": "Watch",
+  "📱": "Mobile Phone",
+  "📲": "Mobile Phone with Arrow",
+  "💻": "Laptop",
+  "⌨️": "Keyboard",
+  "💯": "Hundred Points",
+  "🔢": "Input Numbers",
+  "🔣": "Input Symbols",
+  "🔤": "Input Latin Letters",
+  "🅰️": "A Button (Blood Type)"
+};
+
+const selectedCategory = ref(null);
+const searchQuery = ref('');
+const selectedEmojis = ref([]);
 
 const emojiCategories = ref([
-  { name: "Smileys", icon: "😊", emojis: ["😀", "😁", "😂", "🤣", "😃", "😄", "😅", "😆", "😉", "😊", "😋", "😎", "😍", "🥰", "😘", "😗", "😙", "😚", "☺️", "🙂", "🤗", "🤩", "🤔", "🤨", "😐", "😑", "😶", "🙄", "😏", "😣", "😥", "😮", "🤐", "😯", "😪", "😫", "😴", "😷", "🤒", "🤕", "🤢", "🤮", "🤧", "🥵", "🥶", "🥴", "😵", "🤯", "🤠", "🥳", "😈", "👿", "💀", "☠️", "👻", "👽", "👾", "🤖"] },
-  { name: "Gestures & People", icon: "👋", emojis: ["👋", "🤚", "🖐️", "✋", "🖖", "👌", "🤌", "🤏", "✌️", "🤞", "🤟", "🤘", "🤙", "👈", "👉", "👆", "🖕", "👇", "☝️", "👍", "👎", "✊", "👊", "🤛", "🤜", "👏", "🙌", "👐", "🤲", "🙏", "✍️", "💅", "🤳", "💪", "🦵", "🦶", "👂", "🦻", "👃", "🧠", "🦷", "🦴", "👀", "👁️", "👅", "👄", "👶", "🧒", "👦", "👧", "🧑", "👨", "🧔", "👩", "🧓", "👴", "👵"] },
-  { name: "Hearts, Clothes & Activities", icon: "❤️", emojis: ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "🎀", "👑", "👒", "🎓", "🧢", "⛑️", "🎩", "👓", "🕶️", "🥽", "🥼", "🧳", "👔", "👕", "👖", "🧣", "🧤", "🧥", "🧦", "👗", "👘", "🥻", "👙", "👚", "👛", "👜", "👝", "🎒", "👞", "👟", "🥾", "🥿", "👠", "👡", "🩰", "👢", "🎤", "🎧", "🎼", "🎹", "🥁", "🎷", "🎺", "🎸", "🪕", "🎻"] },
-  { name: "Foods & Drinks", icon: "🍎", emojis: ["🍎", "🍏", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🫐", "🍈", "🍒", "🍑", "🥭", "🍍", "🥥", "🥝", "🍅", "🍆", "🥑", "🥦", "🥬", "🥒", "🌽", "🥕", "🧄", "🧅", "🍄", "🥜", "🌰", "🍞", "🥐", "🥖", "🥨", "🥯", "🥞", "🧀", "🍖", "🍗", "🥩", "🥓", "🍔", "🍟", "🍕", "🌭", "🥪", "🌮", "🌯", "🥙", "🧆", "🥚", "🍳", "🥘", "🍲", "🥣", "🥗", "🍿", "🧈", "🧂", "🍱", "🍘", "🍙", "🍚", "🍛", "🍜", "🍝", "🍠", "🍢", "🍣", "🍤", "🍥", "🥮", "🍡", "🥟", "🥠", "🥡", "🍦", "🍧", "🍨", "🍩", "🍪", "🎂", "🍰", "🧁", "🥧", "🍫", "🍬", "🍭", "🍮", "🍯", "🍼", "🥛", "☕", "🍵", "🍶", "🍾", "🍷", "🍸", "🍹", "🍺", "🍻", "🥂", "🥃", "🥤", "🧃", "🧉"] },
-  { name: "Animals", icon: "🐶", emojis: ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐷", "🐽", "🐸", "🐵", "🙈", "🙉", "🙊", "🐒", "🦍", "🦧", "🐔", "🐧", "🐦", "🐤", "🐣", "🐥", "🦆", "🦅", "🦉", "🦇", "🐺", "🐗", "🐴", "🦄", "🐝", "🪰", "🐞", "🦋", "🐌", "🐛", "🐜", "🦗", "🕷️", "🕸️", "🦂", "🦟", "🦀", "🦞", "🦐", "🦑", "🐙", "🐚", "🐠", "🐟", "🐬", "🐳", "🐋", "🦈", "🐊", "🐍", "🐢", "🦎", "🦖", "🦕", "🐘", "🦒", "🦘", "🦬", "🦏", "🦛", "🐪", "🦙", "🐄", "🐂", "🐃", "🐎", "🐖", "🐏", "🐑", "🦌", "🐕", "🐩", "🦮", "🐕‍🦺", "🐈", "🐈‍⬛", "🪶", "🦩", "🦜", "🦚", "🦢"] },
-  { name: "Plants, Nature & Weather", icon: "🌱", emojis: ["🌱", "🪴", "🌿", "☘️", "🍀", "🍁", "🍂", "🍃", "🌾", "🌻", "🌼", "🌷", "🌹", "🥀", "🌺", "🌸", "💐", "🌲", "🌳", "🌴", "🌵", "🌍", "🌎", "🌏", "🌕", "🌖", "🌗", "🌘", "🌙", "🌚", "🌛", "🌜", "🌝", "☀️", "🌞", "⭐", "🌟", "✨", "⚡", "🔥", "💥", "🌈", "☁️", "⛅", "🌤️", "🌥️", "🌦️", "🌧️", "⛈️", "🌩️", "🌨️", "❄️", "☃️", "⛄", "🌬️", "💨", "🌪️", "🌫️", "💧", "💦", "☔", "☂️", "🌊", "🪸", "🪨", "🪵"] },
-  { name: "Travel, Places & Buildings", icon: "🚗", emojis: ["🚗", "🚕", "🚙", "🚌", "🚎", "🏎️", "🚓", "🚑", "🚒", "🚐", "🚚", "🚛", "🚜", "🛵", "🏍️", "🚲", "🛴", "🛹", "🛼", "🚂", "🚃", "🚄", "🚅", "🚆", "🚇", "🚈", "🚉", "🚊", "🚝", "🚞", "✈️", "🛫", "🛬", "🛩️", "💺", "🚁", "🛸", "🚀", "🛰️", "⛵", "🛶", "🚤", "⛴️", "🛳️", "🚢", "⚓", "⛽", "🚨", "🚥", "🚦", "🛑", "🚧", "🏁", "🗺️", "🗾", "🗽", "🗼", "🏰", "🏯", "🏟️", "🎡", "🎢", "🎠", "⛲", "⛺", "🏕️", "🏖️", "🏜️", "🏝️", "🏞️", "🏟️", "🏛️", "🏠", "🏡", "🏢", "🏣", "🏤", "🏥", "🏦", "🏨", "🏩", "🏪", "🏫", "🏬", "🏭", "🏯", "🏰", "💒", "🗼", "🗽", "⛪", "🕌", "🛕", "🕍", "⛩️", "🕋"] },
-  { name: "Objects", icon: "⌚", emojis: ["⌚", "📱", "📲", "💻", "⌨️", "🖥️", "🖨️", "🖱️", "🖲️", "🕹️", "🗜️", "💽", "💾", "💿", "📀", "📼", "📷", "📸", "📹", "🎥", "📽️", "🎞️", "📞", "☎️", "📟", "📠", "📺", "📻", "🎙️", "🎚️", "🎛️", "🧭", "⏱️", "⏲️", "⏰", "🕰️", "⌛", "⏳", "💡", "🔦", "🕯️", "🪔", "💣", "🧨", "🔫", "🪃", "🏹", "🛡️", "🔧", "🔨", "⚒️", "🛠️", "⛏️", "🔩", "⚙️", "🪚", "🔗", "⛓️", "🪝", "🧰", "🧲", "🪜", "⚗️", "🧪", "🧫", "🧬", "🔬", "🔭", "📡", "💉", "🩺", "🚪", "🛋️", "🛏️", "🛁", "🪑", "🚽", "🚿", "🛁", "🪒", "🧴", "🧷", "🧹", "🧺", "🧻", "🧼", "🧽", "🪣", "🪥", "🧯", "🛒", "🚬", "⚰️", "⚱️", "🗿", "🪦", "🪧"] },
-  { name: "Symbols", icon: "💯", emojis: ["💯", "🔢", "🔣", "🔤", "🅰️", "🅱️", "🆎", "🅾️", "🆑", "🆒", "🆓", "🆔", "🆕", "🆖", "🆗", "🆘", "🆙", "🆚", "🈁", "🈂️", "🈚", "🈯", "🈲", "🈳", "🈴", "🈵", "🈶", "🈷️", "🈸", "🈹", "🈺", "🉐", "🉑", "㊗️", "㊙️", "🈴", "🈵", "🈶", "🈷️", "🈸", "🈹", "🈺", "🉐", "🉑", "🅿️", "🚳", "🚯", "🚱", "🚷", "🚸", "⛔", "📵", "🚫", "🚭", "🚮", "🚾", "🛂", "🛃", "🛄", "🛅", "⚠️", "🚸", "🔴", "🟠", "🟡", "🟢", "🔵", "🟣", "⚫", "⚪", "🟤", "🔺", "🔻", "🔼", "🔽", "⬆️", "⬇️", "⬅️", "➡️", "↖️", "↗️", "↘️", "↙️", "↕️", "↔️", "↩️", "↪️", "⤴️", "⤵️", "🔀", "🔁", "🔂", "🔄", "🔃", "🎦", "📶", "📳", "📴", "♀️", "♂️", "⚧️", "✖️", "➕", "➖", "➗", "♾️", "‼️", "⁉️", "❓", "❔", "❕", "❗", "〰️", "💱", "💲", "⚕️", "♻️", "⚜️", "🔱", "📛", "🔰", "⭕", "✅", "❎", "🌐", "💠", "Ⓜ️", "🌀", "💤", "🏧", "♿", "🚻", "🚼", "🚾", "🛗", "🈳", "🈲", "🈯", "🈚", "🈴", "🈵", "🈶", "🈷️", "🈸", "🈹", "🈺", "🉐", "🉑"] },
-])
-
-const allEmojis = computed(() => {
-  if (!selectedCategory.value) {
-    return emojiCategories.value.flatMap(cat => cat.emojis)
+  {
+    name: "Smileys",
+    icon: "😊",
+    emojis: ["😀", "😁", "😂", "🤣", "😃", "😄", "😅", "😆", "😉", "😊"]
+  },
+  {
+    name: "Gestures & People",
+    icon: "👋",
+    emojis: ["👋", "🤚", "🖐️", "✋", "🖖", "👌"]
+  },
+  {
+    name: "Hearts, Clothes & Activities",
+    icon: "❤️",
+    emojis: ["❤️", "🧡", "💛", "💚"]
+  },
+  {
+    name: "Foods & Drinks",
+    icon: "🍎",
+    emojis: ["🍎", "🍏", "🍐", "🍊", "🍋"]
+  },
+  {
+    name: "Animals",
+    icon: "🐶",
+    emojis: ["🐶", "🐱", "🐭", "🐹", "🐰"]
+  },
+  {
+    name: "Plants, Nature & Weather",
+    icon: "🌱",
+    emojis: ["🌱", "🪴", "🌿", "☘️", "🍀"]
+  },
+  {
+    name: "Travel, Places & Buildings",
+    icon: "🚗",
+    emojis: ["🚗", "🚕", "🚙", "🚌", "🚎"]
+  },
+  {
+    name: "Objects",
+    icon: "⌚",
+    emojis: ["⌚", "📱", "📲", "💻", "⌨️"]
+  },
+  {
+    name: "Symbols",
+    icon: "💯",
+    emojis: ["💯", "🔢", "🔣", "🔤", "🅰️"]
   }
-  const category = emojiCategories.value.find(cat => cat.name === selectedCategory.value)
-  return category ? category.emojis : []
-})
+]);
+
+// Convert emojis to objects with emoji and name
+const allEmojis = computed(() => {
+  return emojiCategories.value.flatMap((category) =>
+    category.emojis.map((emoji) => ({
+      emoji,
+      name: emojiNames[emoji] || "Unknown"
+    }))
+  );
+});
 
 const filteredEmojis = computed(() => {
-  if (!searchQuery.value.trim()) return allEmojis.value
-  const query = searchQuery.value.toLowerCase()
-  return allEmojis.value.filter(emoji => emoji.toLowerCase().includes(query))
-})
+  let emojiObjects = selectedCategory.value
+    ? emojiCategories.value
+        .find((c) => c.name === selectedCategory.value)
+        ?.emojis.map((emoji) => ({
+          emoji,
+          name: emojiNames[emoji] || "Unknown"
+        })) || []
+    : allEmojis.value;
 
-const selectCategory = (categoryName) => {
-  selectedCategory.value = categoryName
-}
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase();
+    emojiObjects = emojiObjects.filter((emojiObj) =>
+      emojiObj.name.toLowerCase().includes(query)
+    );
+  }
+
+  return emojiObjects;
+});
 
 const toggleSelection = (emoji) => {
   if (selectedEmojis.value.includes(emoji)) {
-    selectedEmojis.value = selectedEmojis.value.filter(e => e !== emoji)
+    selectedEmojis.value = selectedEmojis.value.filter((e) => e !== emoji);
   } else {
-    selectedEmojis.value.push(emoji)
+    selectedEmojis.value.push(emoji);
   }
-}
+};
+
+const copyToClipboard = (text) => {
+  navigator.clipboard.writeText(text).then(() => {
+  }).catch((err) => {
+    console.error('Failed to copy: ', err);
+  });
+};
 
 const copySelected = () => {
-  if (selectedEmojis.value.length > 0) {
-    navigator.clipboard.writeText(selectedEmojis.value.join(''))
-  }
-}
+  if (selectedEmojis.value.length === 0) return;
+  copyToClipboard(selectedEmojis.value.join(' '));
+};
 
 const clearSelection = () => {
-  selectedEmojis.value = []
-}
+  selectedEmojis.value = [];
+};
 
-const copyIcon = (icon) => {
-  navigator.clipboard.writeText(icon)
-}
+const selectCategory = (name) => {
+  selectedCategory.value = name;
+};
+
+const copyIcon = async (emoji) => {
+  try {
+    await navigator.clipboard.writeText(emoji);
+  } catch (error) {
+    console.error('Copy failed:', error);
+  }
+};
+
+const copyAndSelect = async (emoji) => {
+  if (!selectedEmojis.value.includes(emoji)) {
+    selectedEmojis.value.push(emoji);
+  }
+
+  try {
+    await navigator.clipboard.writeText(selectedEmojis.value.join(' '));
+    console.log('Copied:', selectedEmojis.value.join(' '));
+  } catch (err) {
+    console.error('Failed to copy:', err);
+  }
+};
 </script>
 
 <style scoped>
@@ -114,7 +244,7 @@ const copyIcon = (icon) => {
 }
 
 .nav-item {
-  @apply px-3 py-1 rounded text-gray-700 hover:bg-gray-300 w-full flex justify-center;
+  @apply px-3 py-1 rounded text-gray-700 hover:bg-gray-300 w-full flex justify-center cursor-pointer;
 }
 
 .nav-item.active {
@@ -134,7 +264,7 @@ const copyIcon = (icon) => {
 }
 
 .search-input {
-  @apply w-full p-2 border-none focus:outline-none text-gray-700;
+  @apply w-full p-2 focus:outline-none text-gray-700 border border-gray-300 rounded-md;
 }
 
 .category {
@@ -158,18 +288,18 @@ const copyIcon = (icon) => {
 }
 
 .footer {
-  @apply flex justify-between items-center p-2 bg-blue-800 text-white rounded-md mt-2;
+  @apply flex justify-between items-center p-2 bg-white text-white rounded-md mt-2;
 }
 
 .selected-text {
-  @apply text-sm;
+  @apply text-sm font-semibold text-gray-700; 
 }
 
 .copy-button {
-  @apply bg-blue-600 px-3 py-1 rounded hover:bg-blue-700 text-white text-sm;
+  @apply bg-blue-500 px-3 py-1 rounded hover:bg-blue-700 text-white text-sm cursor-pointer;
 }
 
 .clear-button {
-  @apply bg-red-600 px-3 py-1 rounded hover:bg-red-700 text-white text-sm;
+  @apply bg-red-500 px-3 py-1 rounded hover:bg-red-700 text-white text-sm cursor-pointer;
 }
 </style>
