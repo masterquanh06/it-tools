@@ -1,34 +1,57 @@
 <script setup lang="ts">
-import { forEach } from "lodash";
 import { ref } from "vue";
 
 const uids = ref<string[]>([]); // To store multiple UIDs
 const inputUids = ref(""); // For the textarea input
-const results = ref<{ uid: string; live: boolean }[]>([]); // To store results
+const liveResults = ref<string[]>([]); // To store LIVE UIDs
+const dieResults = ref<string[]>([]); // To store DIE UIDs
 const loading = ref(false);
 const error = ref("");
 const liveCount = ref(0); // Counter for LIVE UIDs
 const dieCount = ref(0); // Counter for DIE UIDs
 
-async function checkLiveUid(uid: string): Promise<boolean> {
+async function checkLiveUid(uid: string, retries = 1): Promise<boolean> {
   if (!/^\d+$/.test(uid)) {
-    throw new Error("UID phải là số.");
+    error.value = `UID ${uid} phải là số.`;
+    return false;
   }
 
-  const url = `https://graph.facebook.com/${uid}/picture?type=normal`;
-  try {
-    const response = await fetch(url);
-    return !!response.ok;
-  } catch (err) {
-    throw new Error(err instanceof Error ? err.message : "Lỗi không xác định.");
+  const url = `https://graph.facebook.com/${uid}/picture?redirect=false`;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, { cache: 'no-store' });
+      if (!response.ok) {
+
+        if (response.status === 404) return false; // No retry for 404
+        throw new Error(`HTTP error: ${response.status}`);
+      }
+      const data = await response.json();
+      if(!data.data.width && !data.data.height) {
+        return false; // Profile picture exists
+      }
+      // Check if profile picture exists and is not a default image
+      if (data?.data?.url && !data.data.url.includes('default')) {
+        return true;
+      }
+      return false;
+    } catch (err) {
+      if (attempt < retries) {
+        await new Promise((res) => setTimeout(res, 500)); // Reduced retry delay
+        continue;
+      }
+      console.warn(`Failed to check UID ${uid}:`, err);
+      return false;
+    }
   }
+  return false;
 }
 
 async function handleCheck() {
   error.value = "";
   liveCount.value = 0;
   dieCount.value = 0;
-  results.value = [];
+  liveResults.value = [];
+  dieResults.value = [];
 
   if (!inputUids.value.trim()) {
     error.value = "Vui lòng nhập ít nhất một UID.";
@@ -48,34 +71,29 @@ async function handleCheck() {
 
   loading.value = true;
 
-  const BATCH_SIZE = 500; // kiểm tra 20 UID/lượt
+  const BATCH_SIZE = 1000; // Balanced for speed and reliability
   const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
   try {
-    const tempResults: { uid: string; live: boolean }[] = [];
-
     for (let i = 0; i < uids.value.length; i += BATCH_SIZE) {
       const batch = uids.value.slice(i, i + BATCH_SIZE);
 
       const promises = batch.map(async (uid) => {
-        try {
-          const isLive = await checkLiveUid(uid);
-          return { uid, live: isLive };
-        } catch {
-          return { uid, live: false };
+        const isLive = await checkLiveUid(uid);
+        // Update results immediately
+        if (isLive) {
+          liveResults.value.push(uid);
+          liveCount.value++;
+        } else {
+          dieResults.value.push(uid);
+          dieCount.value++;
         }
+        return { uid, live: isLive };
       });
 
-      const batchResults = await Promise.all(promises);
-      tempResults.push(...batchResults);
-
-      // Delay giữa các batch để tránh bị chặn (tùy chỉnh)
-      await delay(300); // 300ms giữa các batch
+      await Promise.all(promises);
+      await delay(500); // Reduced delay for faster processing
     }
-
-    results.value = tempResults;
-    liveCount.value = tempResults.filter((r) => r.live).length;
-    dieCount.value = tempResults.filter((r) => !r.live).length;
   } catch (err) {
     error.value =
       err instanceof Error ? err.message : "Có lỗi xảy ra khi kiểm tra UID.";
@@ -85,10 +103,7 @@ async function handleCheck() {
 }
 
 function handleCopy(type: "live" | "die") {
-  const textToCopy = results.value
-    .filter((result) => result.live === (type === "live"))
-    .map((result) => result.uid)
-    .join("\n");
+  const textToCopy = (type === "live" ? liveResults.value : dieResults.value).join("\n");
   navigator.clipboard.writeText(textToCopy);
 }
 
@@ -100,15 +115,12 @@ function removeDuplicates() {
 }
 
 function filterResults(type: "live" | "die") {
-  const filteredResults = results.value
-    .filter((result) => result.live === (type === "live"))
-    .map((result) => result.uid);
+  const filteredResults = (type === "live" ? liveResults.value : dieResults.value);
   inputUids.value = filteredResults.join("\n");
-  results.value = results.value.filter(
-    (result) => result.live === (type === "live")
-  );
-  liveCount.value = type === "live" ? results.value.length : 0;
-  dieCount.value = type === "die" ? results.value.length : 0;
+  liveResults.value = type === "live" ? filteredResults : [];
+  dieResults.value = type === "die" ? filteredResults : [];
+  liveCount.value = type === "live" ? filteredResults.length : 0;
+  dieCount.value = type === "die" ? filteredResults.length : 0;
 }
 </script>
 
@@ -135,7 +147,8 @@ function filterResults(type: "live" | "die") {
           Remove duplicate
         </label>
         <div class="button-group">
-          <button @click="filterResults('live')" :disabled="loading">Filter</button>
+          <button @click="filterResults('live')" :disabled="loading">Filter Live</button>
+          <button @click="filterResults('die')" :disabled="loading">Filter Die</button>
           <button @click="handleCheck" :disabled="loading">Check Live</button>
         </div>
       </div>
@@ -150,7 +163,7 @@ function filterResults(type: "live" | "die") {
           </div>
           <textarea
             readonly
-            :value="results.filter(r => r.live).map(r => r.uid).join('\n')"
+            :value="liveResults.join('\n')"
             rows="15"
             class="result-textarea"
           ></textarea>
@@ -164,7 +177,7 @@ function filterResults(type: "live" | "die") {
           </div>
           <textarea
             readonly
-            :value="results.filter(r => !r.live).map(r => r.uid).join('\n')"
+            :value="dieResults.join('\n')"
             rows="15"
             class="result-textarea"
           ></textarea>
