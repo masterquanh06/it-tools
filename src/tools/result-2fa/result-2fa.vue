@@ -1,13 +1,16 @@
 <template>
     <div class="container">
         <div class="input-group">
-            <label>* 2FA Secret <span class="highlight">Get code for 2 factor authentication easiest!</span> - Please store your 2FA secret safely</label>
-            <input v-model="token" placeholder="Enter your 2FA secret" />
-            <button @click="submitToken">Submit</button>
+            <label>* 2FA Secret</label>
+            <textarea v-model="secrets" placeholder="Enter your 2FA secrets" rows="4" class="textarea"></textarea>
+            <button @click="submitTokens" :disabled="isLoading">
+                <span v-if="isLoading">Processing...</span>
+                <span v-else>Submit</span>
+            </button>
         </div>
         <div class="input-group">
             <label>* 2FA Code 2-step verification code</label>
-            <input placeholder="ABC12FA Code" v-model="verificationCode" />
+            <textarea v-model="verificationCodes" readonly class="textarea" rows="4"></textarea>
             <button @click="copyCode">Copy</button>
         </div>
     </div>
@@ -16,84 +19,94 @@
 <script setup>
 import { ref, watch } from 'vue';
 
-const token = ref('');
-const responseToken = ref('');
-const verificationCode = ref('');
+const secrets = ref('');
+const responseTokens = ref([]);
+const verificationCodes = ref('');
+const isLoading = ref(false);
 
-// Watch for changes in responseToken and update verificationCode
-watch(responseToken, (newValue) => {
-    verificationCode.value = newValue;
+// Explicitly update verificationCodes when responseTokens changes
+watch(responseTokens, (newValues) => {
+    console.log('responseTokens updated:', newValues); // Debug log
+    verificationCodes.value = newValues.join('\n');
 });
 
-const submitToken = async () => {
-    try {
-        const response = await fetch('https://intern-be-xi.vercel.app/api/tok', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ token: token.value }),
-        });
-        const data = await response.json();
-        if (response.ok) {
-            responseToken.value = data.token;
-        } else {
-            console.error('Error:', data.message);
+const submitTokens = async () => {
+    isLoading.value = true;
+    const secretList = secrets.value.split('\n').map(s => s.trim()).filter(s => s);
+    responseTokens.value = []; // Reset tokens
+
+    for (const secret of secretList) {
+        try {
+            const response = await fetch('https://intern-be-xi.vercel.app/api/tok', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token: secret }),
+            });
+            const data = await response.json();
+            console.log('API Response for secret', secret, ':', data); // Debug log
+
+            if (response.ok) {
+                // Try multiple possible keys for the token
+                const token = data.token || data.code || data.id || data.data?.token || 'No token found';
+                if (token && token !== 'No token found') {
+                    responseTokens.value.push(token);
+                } else {
+                    responseTokens.value.push('No valid token in response');
+                }
+            } else {
+                console.error('Error for secret', secret, ':', data.message);
+                responseTokens.value.push('Error: ' + (data.message || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Network error for secret', secret, ':', error);
+            responseTokens.value.push('Error: Network issue');
         }
-    } catch (error) {
-        console.error('Network error:', error);
+        await new Promise(resolve => setTimeout(resolve, 500)); // Delay between requests
     }
+
+    isLoading.value = false;
+    // Force update verificationCodes after all requests
+    verificationCodes.value = responseTokens.value.join('\n');
 };
 
 const copyCode = () => {
-    navigator.clipboard.writeText(verificationCode.value);
-    alert('Code copied to clipboard!');
+    navigator.clipboard.writeText(verificationCodes.value);
+    alert('Codes copied to clipboard!');
 };
 </script>
 
 <style scoped>
 .container {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 20px;
-    background: white;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    width: 400px;
-    margin: 0 auto;
+    @apply flex flex-col gap-2.5 p-5 bg-white rounded-md shadow-[0_0_10px_rgba(0,0,0,0.1)] w-[400px] mx-auto;
 }
+
 .input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
+    @apply flex flex-col gap-1.5;
 }
+
 label {
-    font-size: 14px;
-    color: #666;
+    @apply text-sm text-gray-600;
 }
+
 .highlight {
-    color: #007bff;
+    @apply text-blue-600;
 }
-input {
-    padding: 10px;
-    width: 100%;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-    font-size: 16px;
+
+.textarea {
+    @apply p-2.5 w-full border border-gray-300 rounded-md box-border text-base resize-none;
 }
+
 button {
-    padding: 10px 20px;
-    width: 100px;
-    cursor: pointer;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 14px;
+    @apply py-2.5 px-5 w-[100px] cursor-pointer bg-blue-600 text-white border-none rounded-md text-sm;
 }
-button:hover {
-    background-color: #0056b3;
+
+button:disabled {
+    @apply bg-gray-400 cursor-not-allowed;
+}
+
+button:hover:not(:disabled) {
+    @apply bg-blue-700;
 }
 </style>

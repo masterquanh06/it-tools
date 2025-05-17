@@ -459,3 +459,21 @@ tools:
   text-to-binary:
     title: Text zu ASCII-Binär
     description: Konvertiere Text in seine ASCII-Binärrepräsentation und umgekehrt.
+
+get-uid-fb:
+    title: UID-Generator
+    description: >-
+      Generiere eine UID (User ID) auf Facebook. Dies ist ein Client-seitiges
+      Tool, das keine Daten an einen Server sendet.
+
+get-icons-fb:
+    title: Facebook-Icon-Generator
+    description: >-
+      Generiere Facebook-Icons für deine Website. Dies ist ein Client-seitiges
+      Tool, das keine Daten an einen Server sendet.
+
+2fa:
+    title: 2FA-Generator
+    description: >-
+      Generiere einen 2FA-Code (Zwei-Faktor-Authentifizierung) für Facebook.
+      Dies ist ein Client-seitiges Tool, das keine Daten an einen Server sendet.

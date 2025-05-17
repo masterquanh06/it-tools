@@ -3,7 +3,7 @@
         <h1 class="title">Get UID from Facebook URL</h1>
         <div class="input-container">
             <label>Input Facebook Names (each line is a Name):</label>
-            <textarea v-model="inputUrls" placeholder="Nhập URL Facebook (mỗi dòng một URL):" rows="4" class="input-textarea"></textarea>
+            <textarea v-model="inputUrls" placeholder="https://www.facebook.com/username" rows="4" class="input-textarea"></textarea>
         </div>
         <button @click="extractUids" :disabled="isLoading || !inputUrls.trim()" class="extract-button">Extract UIDs</button>
         <div class="result-container">
@@ -53,8 +53,8 @@ const extractUids = async () => {
 
     for (const url of urls) {
         const result = await fetchUidFromSalekit(url);
-        if (result && result.id) {
-            results.value.push({ uid: result.id, displayText: `${url} [${result.id}]`, url });
+        if (result && result.uid) {
+            results.value.push({ uid: result.uid, displayText: `${url} [${result.uid}]`, url });
         } else {
             failedCount.value++;
         }
@@ -84,15 +84,17 @@ const fetchUidFromSalekit = async (url) => {
         const data = await response.json();
 
         if (data.success === 200 && data.id) {
-            return { id: data.id };
+            return { uid: data.id };
         } else {
             errorMessage.value = data.message || 'Không thể lấy UID từ API';
+            console.error('Salekit API error:', data.message || data);
             return null;
         }
     } catch (error) {
         errorMessage.value = error.message.includes('Failed to fetch')
             ? 'Không thể kết nối tới API (có thể do CORS, mạng, hoặc server)'
             : `Lỗi: ${error.message}`;
+        console.error('Error fetching UID from salekit:', error);
         return null;
     }
 };
@@ -109,7 +111,6 @@ const copyFailed = () => {
     });
 };
 
-// Update extracted and failed text when results change
 watch(results, () => {
     extractedText.value = results.value.filter(r => r.uid).map(r => r.displayText).join('\n');
     failedText.value = failedUrls.value.join('\n');
@@ -122,7 +123,7 @@ watch(results, () => {
 }
 
 .title {
-    @apply text-xl font-bold text-center mb-4 text-blue-600;
+    @apply text-xl font-bold text-center mb-4;
 }
 
 .input-container {
@@ -138,7 +139,7 @@ label {
 }
 
 .extract-button {
-    @apply bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mb-4 cursor-pointer;
+    @apply bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mb-4;
 }
 
 .extract-button:disabled {
@@ -157,15 +158,19 @@ label {
     @apply mb-4;
 }
 
+label {
+    @apply text-gray-700 block mb-1;
+}
+
 .result-textarea {
     @apply w-full p-2 border border-gray-300 rounded mb-2 resize-none;
 }
 
 .copy-button {
-    @apply bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 cursor-pointer;
+    @apply bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600;
 }
 
 .copy-failed-button {
-    @apply bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 cursor-pointer;
+    @apply bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600;
 }
 </style>

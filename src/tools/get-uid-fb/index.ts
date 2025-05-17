@@ -1,11 +1,10 @@
-import { translate } from '@/plugins/i18n.plugin';
 import { BrandFacebook } from '@vicons/tabler';
 import { defineTool } from '../tool';
 
 export const tool = defineTool({
-    name: translate('tools.get-uid-fb.title'),
+    name: ('Get id Facebook'),
     path: '/get-uid-fb',
-    description: translate('tools.get-uid-fb.description'),
+    description: (' Retrieves user ID from Firebase or Facebook for authentication'),
     keywords: ['facebook', 'uid', 'get', 'extract', 'user id'],
     component: () => import('./get-uid-fb.vue'),
     icon: BrandFacebook,

@@ -364,6 +364,9 @@ tools:
   check-uid-fb:
     title: Check UID Facebook
     description: Check if a Facebook UID is valid and get the profile picture of the user.
+  
+
+
   text-to-nato-alphabet:
     title: Text to NATO alphabet
     description: Transform text into the NATO phonetic alphabet for oral transmission.
@@ -395,3 +398,15 @@ tools:
   text-to-binary:
     title: Text to ASCII binary
     description: Convert text to its ASCII binary representation and vice-versa.
+
+get-uid-fb:
+  title: Get UID Facebook
+  description: Get the UID of a Facebook user from their profile picture.
+
+2fa: 
+  title: 2FA code generator
+  description: Generate and validate time-based OTP (one time password) for multi-factor authentication.
+
+get-icons-fb:
+  title: Get icons Facebook
+  description: Get the profile picture of a Facebook user from their UID.
