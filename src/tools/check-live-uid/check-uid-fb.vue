@@ -70,36 +70,57 @@ async function handleCheck() {
   }
 
   loading.value = true;
+let multiPromise = async <T, R>(
+  chunkSize: number = 50,
+  arr: T[],
+  promiseFn: (item: T) => Promise<R>
+): Promise<R[]> => {
+    let promiseList: Promise<void>[] = [];
+    let resList: R[] = [];
+    let count = 0;
 
-  const BATCH_SIZE = 1000; // Balanced for speed and reliability
-  const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
+    let helper = async (i: number): Promise<void> => {
+        return promiseFn(arr[i]).then(async res => {
+            resList.push(res);
 
-  try {
-    for (let i = 0; i < uids.value.length; i += BATCH_SIZE) {
-      const batch = uids.value.slice(i, i + BATCH_SIZE);
-
-      const promises = batch.map(async (uid) => {
-        const isLive = await checkLiveUid(uid);
-        // Update results immediately
-        if (isLive) {
-          liveResults.value.push(uid);
-          liveCount.value++;
-        } else {
-          dieResults.value.push(uid);
-          dieCount.value++;
-        }
-        return { uid, live: isLive };
-      });
-
-      await Promise.all(promises);
-      await delay(500); // Reduced delay for faster processing
+            if (count < arr.length) {
+                await helper(count++);
+            }
+        });
     }
-  } catch (err) {
-    error.value =
-      err instanceof Error ? err.message : "Có lỗi xảy ra khi kiểm tra UID.";
-  } finally {
-    loading.value = false;
-  }
+
+    for (let i = 0; i < Math.min(arr.length, chunkSize); i++) {
+        ++count;
+        promiseList.push(helper(i));
+    }
+
+    await Promise.all(promiseList);
+
+    return resList;
+}
+const BATCH_SIZE = 1000; // Balanced for speed and reliability
+
+try {
+  const resultList = await multiPromise(BATCH_SIZE, uids.value, async (uid) => {
+    const isLive = await checkLiveUid(uid);
+    if (isLive) {
+      liveResults.value.push(uid);
+      liveCount.value++;
+    } else {
+      dieResults.value.push(uid);
+      dieCount.value++;
+    }
+    return { uid, live: isLive };
+  });
+
+  // Nếu cần dùng resultList cho mục đích gì đó, có thể sử dụng ở đây.
+} catch (err) {
+  error.value =
+    err instanceof Error ? err.message : "Có lỗi xảy ra khi kiểm tra UID.";
+} finally {
+  loading.value = false;
+}
+
 }
 
 function handleCopy(type: "live" | "die") {
