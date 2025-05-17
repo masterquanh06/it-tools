@@ -51,7 +51,7 @@ const submitTokens = async () => {
                 // Try multiple possible keys for the token
                 const token = data.token || data.code || data.id || data.data?.token || 'No token found';
                 if (token && token !== 'No token found') {
-                    responseTokens.value.push(token);
+                    responseTokens.value.push(secret,"|",token, "\n");
                 } else {
                     responseTokens.value.push('No valid token in response');
                 }
@@ -68,7 +68,7 @@ const submitTokens = async () => {
 
     isLoading.value = false;
     // Force update verificationCodes after all requests
-    verificationCodes.value = responseTokens.value.join('\n');
+    verificationCodes.value = responseTokens.value.join('');
 };
 
 const copyCode = () => {

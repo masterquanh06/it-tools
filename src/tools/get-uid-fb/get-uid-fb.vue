@@ -54,7 +54,7 @@ const extractUids = async () => {
     for (const url of urls) {
         const result = await fetchUidFromSalekit(url);
         if (result && result.uid) {
-            results.value.push({ uid: result.uid, displayText: `${url} [${result.uid}]`, url });
+            results.value.push({ uid: result.uid, displayText: `${url}|${result.uid}`, url });
         } else {
             failedCount.value++;
         }
@@ -167,10 +167,10 @@ label {
 }
 
 .copy-button {
-    @apply bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600;
+    @apply bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 cursor-pointer;
 }
 
 .copy-failed-button {
-    @apply bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600;
+    @apply bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 cursor-pointer;
 }
 </style>
