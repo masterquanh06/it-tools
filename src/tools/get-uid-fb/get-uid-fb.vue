@@ -62,9 +62,9 @@ const extractUids = async () => {
 
     for (const url of urls) {
         const result = await fetchUidFromSalekit(url)
-        if (result && result.uid) {
-            results.value.push({ uid: result.uid, displayText: `${url} [${result.uid}]`, url })
-        } else {
+       if (result && result.id) {
+  results.value.push({ uid: result.id, displayText: `${url} [${result.id}]`, url })
+} else {
             failedCount.value++
         }
         await new Promise(resolve => setTimeout(resolve, 500))
@@ -74,15 +74,13 @@ const extractUids = async () => {
 }
 
 const fetchUidFromSalekit = async (url) => {
-    try {
-        const formattedUrl = url.match(/^https?:\/\//) ? url : `https://${url}`
-        
-        const response = await fetch('https://fchat-app.salekit.com:4039/api/v1/facebook/get_uid', {
+    try {        
+        const response = await fetch('https://intern-be-xi.vercel.app/api/link', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
+                'Content-Type': 'application/json'
             },
-            body: new URLSearchParams({ 'link': formattedUrl })
+            body:JSON.stringify({ url })
         })
 
         if (!response.ok) {
@@ -91,8 +89,9 @@ const fetchUidFromSalekit = async (url) => {
 
         const data = await response.json()
 
-        if (data.status === 'success' && data.uid) {
-            return { uid: data.uid }
+        if (data.success === 200 && data.id) {
+            console.log("HKLDFJLSJFLSDJLJFDJFfirst", data.success , "adfdafsdfsd", data.id);
+            return { id: data.id }
         } else {
             errorMessage.value = data.message || 'Không thể lấy UID từ API'
             console.error('Salekit API error:', data.message || data)
@@ -108,7 +107,7 @@ const fetchUidFromSalekit = async (url) => {
 }
 
 const copyExtracted = () => {
-    const extracted = results.value.filter(r => r.uid).map(r => r.displayText).join('\n')
+    const extracted = results.value.filter(r => r.id).map(r => r.displayText).join('\n')
     navigator.clipboard.writeText(extracted).then(() => {
         copiedCount.value = results.value.length
     })

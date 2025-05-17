@@ -22,6 +22,7 @@ import { tool as emojiPicker } from './emoji-picker';
 import { tool as cypher } from './encryption';
 import { tool as etaCalculator } from './eta-calculator';
 import { tool as getLiveUID } from './get-uid-fb';
+import { tool as result2Fa } from './result-2fa';
 import { tool as gitMemo } from './git-memo';
 import { tool as hashText } from './hash-text';
 import { tool as hmacGenerator } from './hmac-generator';
@@ -96,6 +97,7 @@ export const toolsByCategory: ToolCategory[] = [
     components: [
       checkLiveUID,
       getLiveUID, 
+      result2Fa,
       getIconsFb,
     ],
   },
