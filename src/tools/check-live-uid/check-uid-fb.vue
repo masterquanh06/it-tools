@@ -71,7 +71,7 @@ async function handleCheck() {
 
   loading.value = true;
 let multiPromise = async <T, R>(
-  chunkSize: number = 50,
+  chunkSize: number = 50, 
   arr: T[],
   promiseFn: (item: T) => Promise<R>
 ): Promise<R[]> => {

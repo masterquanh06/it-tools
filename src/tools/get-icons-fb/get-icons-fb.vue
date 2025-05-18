@@ -50,318 +50,138 @@
         </div>
       </div>
       <div class="footer">
-        <span class="selected-text">Selected emoji: {{ selectedEmojis.join(' ') }}</span>
-        <button @click="copySelected" class="copy-button">COPY</button>
-        <button @click="clearSelection" class="clear-button">CLEAR</button>
+        <span class="selected-text">Selected emojis: {{ selectedEmojis.join(' ') }} <span class="auto-copy">(Copies automatically)</span></span>
+        <div class="button-group">
+          <button @click="copySelected" class="copy-button">COPY</button>
+          <button @click="clearSelection" class="clear-button">CLEAR</button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
-// Expanded emoji name mapping
+// Comprehensive emoji name mapping
 const emojiNames = {
   // Smileys & Emotion
-  "😀": "Grinning Face",
-  "😁": "Beaming Face with Smiling Eyes",
-  "😂": "Face with Tears of Joy",
-  "🤣": "Rolling on the Floor Laughing",
-  "😃": "Smiling Face with Big Eyes",
-  "😄": "Smiling Face with Smiling Eyes",
-  "😅": "Smiling Face with Sweat",
-  "😆": "Grinning Squinting Face",
-  "😉": "Winking Face",
-  "😊": "Smiling Face with Smiling Eyes",
-  "😋": "Face Savoring Food",
-  "😎": "Smiling Face with Sunglasses",
-  "😍": "Smiling Face with Heart-Eyes",
-  "🥰": "Smiling Face with Hearts",
-  "😘": "Face Blowing a Kiss",
-  "🥲": "Smiling Face with Tear",
-  "😗": "Kissing Face",
-  "😙": "Kissing Face with Smiling Eyes",
-  "🥹": "Face Holding Back Tears",
-  "😚": "Kissing Face with Closed Eyes",
-  "🙂": "Slightly Smiling Face",
-  "🫠": "Melting Face",
-  "🙃": "Upside-Down Face",
-  "😐": "Neutral Face",
-  "😑": "Expressionless Face",
-  "😶": "Face Without Mouth",
-  "🫥": "Dotted Line Face",
-  "😶‍🌫️": "Face in Clouds",
-  "😏": "Smirking Face",
-  "😒": "Unamused Face",
-  "🙄": "Face with Rolling Eyes",
-  "😬": "Grimacing Face",
-  "😮‍💨": "Face Exhaling",
-  "🤥": "Lying Face",
-  "😌": "Relieved Face",
-  "😔": "Pensive Face",
-  "😪": "Sleepy Face",
-  
-  // People & Body
-  "👋": "Waving Hand",
-  "🤚": "Raised Back of Hand",
-  "🖐️": "Hand with Fingers Splayed",
-  "✋": "Raised Hand",
-  "🖖": "Vulcan Salute",
-  "👌": "OK Hand",
-  "🤌": "Pinched Fingers",
-  "🤏": "Pinching Hand",
-  "✌️": "Victory Hand",
-  "🤞": "Crossed Fingers",
-  "🫰": "Hand with Index Finger and Thumb Crossed",
-  "🤟": "Love-You Gesture",
-  "🤘": "Sign of the Horns",
-  "🤙": "Call Me Hand",
-  "👈": "Backhand Index Pointing Left",
-  "👉": "Backhand Index Pointing Right",
-  "👆": "Backhand Index Pointing Up",
-  "🖕": "Middle Finger",
-  "👇": "Backhand Index Pointing Down",
-  "☝️": "Index Pointing Up",
-  "👍": "Thumbs Up",
-  "👎": "Thumbs Down",
-  "✊": "Raised Fist",
-  "👊": "Oncoming Fist",
-  "🤛": "Left-Facing Fist",
-  "🤜": "Right-Facing Fist",
-  "👏": "Clapping Hands",
-  "🙌": "Raising Hands",
-  "👐": "Open Hands",
-  "🤲": "Palms Up Together",
-  "🤝": "Handshake",
-  "🙏": "Folded Hands",
-  
-  // Hearts & Love
-  "❤️": "Red Heart",
-  "🧡": "Orange Heart",
-  "💛": "Yellow Heart",
-  "💚": "Green Heart",
-  "💙": "Blue Heart",
-  "💜": "Purple Heart",
-  "🖤": "Black Heart",
-  "🤍": "White Heart",
-  "🤎": "Brown Heart",
-  "❤️‍🔥": "Heart on Fire",
-  "❤️‍🩹": "Mending Heart",
-  "💔": "Broken Heart",
-  "💝": "Heart with Ribbon",
-  "💘": "Heart with Arrow",
-  "💖": "Sparkling Heart",
-  "💗": "Growing Heart",
-  "💓": "Beating Heart",
-  "💞": "Revolving Hearts",
-  "💕": "Two Hearts",
-  "💌": "Love Letter",
-  
-  // Food & Drink
-  "🍎": "Red Apple",
-  "🍏": "Green Apple",
-  "🍐": "Pear",
-  "🍊": "Tangerine",
-  "🍋": "Lemon",
-  "🍌": "Banana",
-  "🍉": "Watermelon",
-  "🍇": "Grapes",
-  "🍓": "Strawberry",
-  "🫐": "Blueberries",
-  "🍈": "Melon",
-  "🍒": "Cherries",
-  "🍑": "Peach",
-  "🥭": "Mango",
-  "🍍": "Pineapple",
-  "🥥": "Coconut",
-  "🥝": "Kiwi Fruit",
-  "🍅": "Tomato",
-  "🍆": "Eggplant",
-  "🥑": "Avocado",
-  "🌮": "Taco",
-  "🌯": "Burrito",
-  "🍔": "Hamburger",
-  "🍟": "French Fries",
-  "🍕": "Pizza",
-  "🥪": "Sandwich",
-  "🥙": "Stuffed Flatbread",
-  "🧆": "Falafel",
-  "🥚": "Egg",
-  "🍳": "Cooking",
-  "🥞": "Pancakes",
-  "🧇": "Waffle",
-  "🍞": "Bread",
-  "☕": "Hot Beverage",
-  "🍵": "Teacup Without Handle",
-  "🍶": "Sake",
-  "🍾": "Bottle with Popping Cork",
-  "🍷": "Wine Glass",
-  "🍸": "Cocktail Glass",
-  "🍹": "Tropical Drink",
-  
-  // Animals & Nature
-  "🐶": "Dog Face",
-  "🐱": "Cat Face",
-  "🐭": "Mouse Face",
-  "🐹": "Hamster",
-  "🐰": "Rabbit Face",
-  "🦊": "Fox",
-  "🐻": "Bear",
-  "🐼": "Panda",
-  "🐨": "Koala",
-  "🐯": "Tiger Face",
-  "🦁": "Lion",
-  "🐮": "Cow Face",
-  "🐷": "Pig Face",
-  "🐵": "Monkey Face",
-  "🙈": "See-No-Evil Monkey",
-  "🙉": "Hear-No-Evil Monkey",
-  "🙊": "Speak-No-Evil Monkey",
-  "🐔": "Chicken",
-  "🐧": "Penguin",
-  "🐦": "Bird",
-  "🐤": "Baby Chick",
-  "🐣": "Hatching Chick", 
-  "🦅": "Eagle",
-  "🦆": "Duck",
-  "🦉": "Owl",
-  "🦇": "Bat",
-  "🐺": "Wolf",
-  "🐗": "Boar",
-  "🐴": "Horse Face",
-  "🦄": "Unicorn",
-  "🐝": "Honeybee",
-  "🪱": "Worm",
-  "🐛": "Bug",
-  "🦋": "Butterfly",
-  "🐌": "Snail",
-  
-  // Plants & Flowers
-  "🌱": "Seedling",
-  "🪴": "Potted Plant",
-  "🌿": "Herb",
-  "☘️": "Shamrock",
-  "🍀": "Four Leaf Clover",
-  "🍁": "Maple Leaf",
-  "🍂": "Fallen Leaf",
-  "🍃": "Leaf Fluttering in Wind",
-  "🌵": "Cactus",
-  "🌴": "Palm Tree",
-  "🌳": "Deciduous Tree",
-  "🌲": "Evergreen Tree",
-  "🪵": "Wood",
-  "🌷": "Tulip",
-  "🌹": "Rose",
-  "🥀": "Wilted Flower",
-  "🌺": "Hibiscus",
-  "🌸": "Cherry Blossom",
-  "🌼": "Blossom",
-  "🌻": "Sunflower",
-  
-  // Travel & Places
-  "🚗": "Automobile",
-  "🚕": "Taxi",
-  "🚙": "Sport Utility Vehicle",
-  "🚌": "Bus",
-  "🚎": "Trolleybus",
-  "🏎️": "Racing Car",
-  "🚓": "Police Car",
-  "🚑": "Ambulance",
-  "🚒": "Fire Engine",
-  "🚚": "Delivery Truck",
-  "🚛": "Articulated Lorry",
-  "🚜": "Tractor",
-  "🛵": "Motor Scooter",
-  "🏍️": "Motorcycle",
-  "🚲": "Bicycle",
-  "✈️": "Airplane",
-  "🚀": "Rocket",
-  "🛸": "Flying Saucer",
-  "🚁": "Helicopter",
-  "⛵": "Sailboat",
-  "🚢": "Ship",
-  "🏠": "House",
-  "🏡": "House with Garden",
-  "🏢": "Office Building",
-  "🏣": "Japanese Post Office",
-  "🏤": "Post Office",
-  "🏥": "Hospital",
-  "🏦": "Bank",
-  "🏨": "Hotel",
-  "🏫": "School",
-  "🏛️": "Classical Building",
-  "⛪": "Church",
-  "🕌": "Mosque",
-  "🕍": "Synagogue",
-  "🏙️": "Cityscape",
-  
+  "😀": "Grinning Face", "😁": "Beaming Face with Smiling Eyes", "😂": "Face with Tears of Joy", "🤣": "Rolling on the Floor Laughing",
+  "😃": "Smiling Face with Big Eyes", "😄": "Smiling Face with Smiling Eyes", "😅": "Smiling Face with Sweat", "😆": "Grinning Squinting Face",
+  "😉": "Winking Face", "😊": "Smiling Face with Smiling Eyes", "😋": "Face Savoring Food", "😎": "Smiling Face with Sunglasses",
+  "😍": "Smiling Face with Heart-Eyes", "🥰": "Smiling Face with Hearts", "😘": "Face Blowing a Kiss", "🥲": "Smiling Face with Tear",
+  "😗": "Kissing Face", "😙": "Kissing Face with Smiling Eyes", "🥹": "Face Holding Back Tears", "😚": "Kissing Face with Closed Eyes",
+  "🙂": "Slightly Smiling Face", "🫠": "Melting Face", "🙃": "Upside-Down Face", "😐": "Neutral Face", "😑": "Expressionless Face",
+  "😶": "Face Without Mouth", "🫥": "Dotted Line Face", "😶‍🌫️": "Face in Clouds", "😏": "Smirking Face", "😒": "Unamused Face",
+  "🙄": "Face with Rolling Eyes", "😬": "Grimacing Face", "😮‍💨": "Face Exhaling", "🤥": "Lying Face", "😌": "Relieved Face",
+  "😔": "Pensive Face", "😪": "Sleepy Face", "🤤": "Drooling Face", "😴": "Sleeping Face", "😷": "Face with Medical Mask",
+  "🤒": "Face with Thermometer", "🤕": "Face with Head-Bandage", "🤢": "Nauseated Face", "🤮": "Face Vomiting", "🤧": "Sneezing Face",
+  "🥳": "Partying Face", "🥶": "Cold Face", "🥵": "Hot Face", "🥴": "Woozy Face", "😵": "Face with Spiral Eyes", "🤯": "Exploding Head",
+  "😱": "Face Screaming in Fear", "😨": "Fearful Face", "😰": "Anxious Face with Sweat", "😥": "Sad but Relieved Face",
+  "😓": "Downcast Face with Sweat", "🤗": "Hugging Face", "🤔": "Thinking Face", "🤐": "Zipper-Mouth Face", "🤨": "Face with Raised Eyebrow",
+  "😐": "Neutral Face", "😶‍🌫️": "Face in Clouds", "😕": "Confused Face", "😟": "Worried Face", "🙁": "Slightly Frowning Face",
+  "☹️": "Frowning Face", "😣": "Persevering Face", "😖": "Confounded Face", "😫": "Tired Face", "😩": "Weary Face", "🥺": "Pleading Face",
+  "😢": "Crying Face", "😭": "Loudly Crying Face", "😤": "Face with Steam from Nose", "😡": "Pouting Face", "😠": "Angry Face",
+  "🤬": "Face with Symbols over Mouth", "😈": "Smiling Face with Horns", "👿": "Angry Face with Horns", "💀": "Skull", "☠️": "Skull and Crossbones",
+  "💩": "Pile of Poo", "🤡": "Clown Face", "👹": "Ogre", "👺": "Goblin", "👻": "Ghost", "👽": "Alien", "👾": "Alien Monster",
+  "🤖": "Robot", "😺": "Grinning Cat", "😸": "Grinning Cat with Smiling Eyes", "😹": "Cat with Tears of Joy", "😻": "Smiling Cat with Heart-Eyes",
+  "😼": "Cat with Wry Smile", "😽": "Kissing Cat", "🙀": "Weary Cat", "😿": "Crying Cat", "😾": "Pouting Cat",
+
+  // Gestures & People
+  "👋": "Waving Hand", "🤚": "Raised Back of Hand", "🖐️": "Hand with Fingers Splayed", "✋": "Raised Hand", "🖖": "Vulcan Salute",
+  "👌": "OK Hand", "🤌": "Pinched Fingers", "🤏": "Pinching Hand", "✌️": "Victory Hand", "🤞": "Crossed Fingers", "🫰": "Hand with Index Finger and Thumb Crossed",
+  "🤟": "Love-You Gesture", "🤘": "Sign of the Horns", "🤙": "Call Me Hand", "👈": "Backhand Index Pointing Left", "👉": "Backhand Index Pointing Right",
+  "👆": "Backhand Index Pointing Up", "🖕": "Middle Finger", "👇": "Backhand Index Pointing Down", "☝️": "Index Pointing Up", "👍": "Thumbs Up",
+  "👎": "Thumbs Down", "✊": "Raised Fist", "👊": "Oncoming Fist", "🤛": "Left-Facing Fist", "🤜": "Right-Facing Fist", "👏": "Clapping Hands",
+  "🙌": "Raising Hands", "👐": "Open Hands", "🤲": "Palms Up Together", "🤝": "Handshake", "🙏": "Folded Hands", "✍️": "Writing Hand",
+  "💅": "Nail Polish", "🤳": "Selfie", "💪": "Flexed Biceps", "🦾": "Mechanical Arm", "🦿": "Mechanical Leg", "🦵": "Leg", "🦶": "Foot",
+  "👂": "Ear", "👃": "Nose", "🧠": "Brain", "🫀": "Anatomical Heart", "🫁": "Lungs", "🦷": "Tooth", "👀": "Eyes", "👁️": "Eye",
+  "👅": "Tongue", "👄": "Mouth", "🦴": "Bone", "👶": "Baby", "🧒": "Child", "👦": "Boy", "👧": "Girl", "🧑": "Person", "👨": "Man",
+  "👩": "Woman", "🧔": "Bearded Person", "👴": "Old Man", "👵": "Old Woman", "👲": "Man with Chinese Cap", "👳": "Person Wearing Turban",
+  "👮": "Police Officer", "👷": "Construction Worker", "💂": "Guard", "🕵️": "Detective", "🤴": "Prince", "🤵": "Man in Tuxedo",
+  "👰": "Bride with Veil", "🤰": "Pregnant Woman", "🤱": "Breast-Feeding", "👼": "Baby Angel", "🎅": "Santa Claus", "🤶": "Mrs. Claus",
+  "🦸": "Superhero", "🦹": "Supervillain", "🧙": "Mage", "🧚": "Fairy", "🧛": "Vampire", "🧜": "Merperson", "🧝": "Elf", "🧞": "Genie",
+  "🧟": "Zombie", "🧑‍⚕️": "Health Worker", "🧑‍🎓": "Student", "🧑‍🏫": "Teacher", "🧑‍⚖️": "Judge", "🧑‍🌾": "Farmer", "🧑‍🍳": "Cook",
+  "🧑‍💼": "Office Worker", "🧑‍🔧": "Mechanic", "🧑‍🏭": "Factory Worker", "🧑‍💻": "Technologist", "🧑‍🎤": "Singer", "🧑‍🎬": "Artist",
+  "🧑‍🎨": "Painter", "🧑‍✈️": "Pilot", "🧑‍🚀": "Astronaut", "🧑‍🚒": "Firefighter", "👨‍👩‍👧": "Family with Mother, Father, and Child",
+  "👨‍👩‍👧‍👦": "Family with Two Children", "👨‍👩‍👧‍👧": "Family with Two Daughters", "👨‍👩‍👦‍👦": "Family with Two Sons",
+
+  // Hearts, Clothes, Activities
+  "❤️": "Red Heart", "🧡": "Orange Heart", "💛": "Yellow Heart", "💚": "Green Heart", "💙": "Blue Heart", "💜": "Purple Heart",
+  "🖤": "Black Heart", "🤍": "White Heart", "🤎": "Brown Heart", "❤️‍🔥": "Heart on Fire", "❤️‍🩹": "Mending Heart", "💔": "Broken Heart",
+  "💝": "Heart with Ribbon", "💘": "Heart with Arrow", "💖": "Sparkling Heart", "💗": "Growing Heart", "💓": "Beating Heart", "💞": "Revolving Hearts",
+  "💕": "Two Hearts", "💌": "Love Letter", "👚": "Woman’s Clothes", "👕": "T-Shirt", "👖": "Jeans", "🧥": "Coat", "🥼": "Lab Coat",
+  "👔": "Necktie", "👗": "Dress", "👙": "Bikini", "👘": "Kimono", "🥻": "Sari", "🩱": "One-Piece Swimsuit", "🩲": "Briefs", "🩳": "Shorts",
+  "🥿": "Flat Shoe", "👞": "Man’s Shoe", "👟": "Running Shoe", "🥾": "Hiking Boot", "🥳": "Party Hat", "🎩": "Top Hat", "🧢": "Billed Cap",
+  "👑": "Crown", "🎓": "Graduation Cap", "🧳": "Luggage", "⛳": "Flag in Hole", "🏀": "Basketball", "🏈": "American Football", "⚽": "Soccer Ball",
+  "🏐": "Volleyball", "🏉": "Rugby Football", "🎾": "Tennis", "🎱": "Pool 8 Ball", "🏓": "Ping Pong", "🏸": "Badminton", "🥊": "Boxing Glove",
+  "🥋": "Martial Arts Uniform", "🎽": "Running Shirt", "🎿": "Ski", "⛸️": "Ice Skate", "🎣": "Fishing Pole", "🎧": "Headphones", "🎤": "Microphone",
+  "🎧": "Headphones", "🎸": "Guitar", "🎹": "Musical Keyboard", "🎺": "Trumpet", "🎻": "Violin", "🥁": "Drum", "🎷": "Saxophone",
+
+  // Foods, Drinks
+  "🍎": "Red Apple", "🍏": "Green Apple", "🍐": "Pear", "🍊": "Tangerine", "🍋": "Lemon", "🍌": "Banana", "🍉": "Watermelon", "🍇": "Grapes",
+  "🍓": "Strawberry", "🫐": "Blueberries", "🍈": "Melon", "🍒": "Cherries", "🍑": "Peach", "🥭": "Mango", "🍍": "Pineapple", "🥥": "Coconut",
+  "🥝": "Kiwi Fruit", "🍅": "Tomato", "🍆": "Eggplant", "🥑": "Avocado", "🥦": "Broccoli", "🥕": "Carrot", "🌽": "Corn", "🌶️": "Hot Pepper",
+  "🥒": "Cucumber", "🥬": "Leafy Green", "🥔": "Potato", "🍠": "Roasted Sweet Potato", "🥐": "Croissant", "🥖": "Baguette Bread", "🥨": "Pretzel",
+  "🥯": "Bagel", "🥞": "Pancakes", "🧀": "Cheese Wedge", "🍖": "Meat on Bone", "🍗": "Poultry Leg", "🥩": "Cut of Meat", "🥓": "Bacon",
+  "🍔": "Hamburger", "🍟": "French Fries", "🍕": "Pizza", "🌭": "Hot Dog", "🥪": "Sandwich", "🌮": "Taco", "🌯": "Burrito", "🥙": "Stuffed Flatbread",
+  "🥚": "Egg", "🍳": "Cooking", "🥘": "Shallow Pan of Food", "🍲": "Pot of Food", "🥣": "Bowl with Spoon", "🥗": "Green Salad", "🍿": "Popcorn",
+  "🧈": "Butter", "🧂": "Salt", "🥫": "Canned Food", "🍱": "Bento Box", "🍘": "Rice Cracker", "🍙": "Rice Ball", "🍚": "Cooked Rice",
+  "🍛": "Curry Rice", "🍜": "Steaming Bowl", "🍝": "Spaghetti", "🍠": "Roasted Sweet Potato", "🍢": "Oden", "🍣": "Sushi", "🍤": "Fried Shrimp",
+  "🍥": "Fish Cake with Swirl", "🥮": "Moon Cake", "🍡": "Dango", "🥟": "Dumpling", "🥠": "Fortune Cookie", "🥡": "Takeout Box", "🍮": "Custard",
+  "🍦": "Soft Ice Cream", "🍧": "Shaved Ice", "🍨": "Ice Cream", "🍩": "Doughnut", "🍪": "Cookie", "🎂": "Birthday Cake", "🍰": "Shortcake",
+  "🧁": "Cupcake", "🥧": "Pie", "🍫": "Chocolate Bar", "🍬": "Candy", "🍭": "Lollipop", "🍮": "Custard", "🍯": "Honey Pot", "🍼": "Baby Bottle",
+  "🥛": "Glass of Milk", "☕": "Hot Beverage", "🍵": "Teacup Without Handle", "🍶": "Sake", "🍾": "Bottle with Popping Cork", "🍷": "Wine Glass",
+  "🍸": "Cocktail Glass", "🍹": "Tropical Drink", "🍺": "Beer Mug", "🍻": "Clinking Beer Mugs", "🥂": "Clinking Glasses", "🥃": "Tumbler Glass",
+  "🥤": "Cup with Straw", "🧃": "Beverage Box", "🧉": "Mate", "🧋": "Bubble Tea",
+
+  // Animals
+  "🐶": "Dog Face", "🐱": "Cat Face", "🐭": "Mouse Face", "🐹": "Hamster", "🐰": "Rabbit Face", "🦊": "Fox", "🐻": "Bear", "🐼": "Panda",
+  "🐨": "Koala", "🐯": "Tiger Face", "🦁": "Lion", "🐮": "Cow Face", "🐷": "Pig Face", "🐵": "Monkey Face", "🙈": "See-No-Evil Monkey",
+  "🙉": "Hear-No-Evil Monkey", "🙊": "Speak-No-Evil Monkey", "🐒": "Monkey", "🐴": "Horse Face", "🦄": "Unicorn", "🐝": "Honeybee",
+  "🐛": "Bug", "🦋": "Butterfly", "🐌": "Snail", "🐞": "Lady Beetle", "🐜": "Ant", "🪲": "Beetle", "🪳": "Cockroach", "🕷️": "Spider",
+  "🕸️": "Spider Web", "🦂": "Scorpion", "🦟": "Mosquito", "🪰": "Fly", "🪱": "Worm", "🦠": "Microbe", "🐢": "Turtle", "🐍": "Snake",
+  "🦎": "Lizard", "🦖": "T-Rex", "🦕": "Sauropod", "🐙": "Octopus", "🦑": "Squid", "🦐": "Shrimp", "🦞": "Lobster", "🦀": "Crab",
+  "🐡": "Pufferfish", "🐠": "Tropical Fish", "🐟": "Fish", "🐬": "Dolphin", "🦈": "Shark", "🐳": "Spouting Whale", "🐋": "Whale",
+  "🐊": "Crocodile", "🐅": "Leopard", "🐆": "Jaguar", "🦓": "Zebra", "🦍": "Gorilla", "🐘": "Elephant", "🦏": "Rhinoceros", "🦛": "Hippopotamus",
+  "🐪": "Camel", "🐫": "Two-Hump Camel", "🦒": "Giraffe", "🐃": "Water Buffalo", "🐂": "Ox", "🐄": "Cow", "🐎": "Horse", "🐖": "Pig",
+  "🐏": "Ram", "🐑": "Sheep", "🐐": "Goat", "🐓": "Rooster", "🕊️": "Dove", "🐕": "Dog", "🐩": "Poodle", "🐈": "Cat", "🐇": "Rabbit",
+  "🦃": "Turkey", "🪿": "Goose", "🐔": "Chicken", "🐣": "Hatching Chick", "🐤": "Baby Chick", "🐥": "Front-Facing Baby Chick", "🦅": "Eagle",
+  "🦆": "Duck", "🦢": "Swan", "🦚": "Peacock", "🦜": "Parrot", "🦡": "Badger", "🦦": "Otter", "🦥": "Sloth", "🦨": "Skunk", "🐁": "Mouse",
+  "🐀": "Rat", "🐹": "Hamster", "🐰": "Rabbit Face", "🦔": "Hedgehog", "🐿️": "Chipmunk", "🦇": "Bat", "🐺": "Wolf", "🐗": "Boar",
+  "🐴": "Horse Face", "🦌": "Deer", "🦄": "Unicorn",
+
+  // Plants, Nature, Weather
+  "🌱": "Seedling", "🪴": "Potted Plant", "🌿": "Herb", "☘️": "Shamrock", "🍀": "Four Leaf Clover", "🍁": "Maple Leaf", "🍂": "Fallen Leaf",
+  "🍃": "Leaf Fluttering in Wind", "🌵": "Cactus", "🌴": "Palm Tree", "🌳": "Deciduous Tree", "🌲": "Evergreen Tree", "🪵": "Wood",
+  "🌷": "Tulip", "🌹": "Rose", "🥀": "Wilted Flower", "🌺": "Hibiscus", "🌸": "Cherry Blossom", "🌼": "Blossom", "🌻": "Sunflower",
+  "🌞": "Sun with Face", "🌝": "Full Moon with Face", "🌚": "New Moon with Face", "🌛": "First Quarter Moon with Face", "🌜": "Last Quarter Moon with Face",
+  "🌕": "Full Moon", "🌖": "Waning Gibbous Moon", "🌗": "Last Quarter Moon", "🌘": "Waning Crescent Moon", "🌑": "New Moon", "🌒": "Waxing Crescent Moon",
+  "🌓": "First Quarter Moon", "🌔": "Waxing Gibbous Moon", "🌙": "Crescent Moon", "🌟": "Glowing Star", "⭐": "White Medium Star", "🌟": "Glowing Star",
+  "💫": "Dizzy", "🌠": "Shooting Star", "🌌": "Milky Way", "☄️": "Comet", "🌍": "Globe Showing Europe-Africa", "🌎": "Globe Showing Americas",
+  "🌏": "Globe Showing Asia-Australia", "🌐": "Globe with Meridians", "🪐": "Ringed Planet", "💥": "Collision", "🌋": "Volcano",
+  "🌊": "Water Wave", "🌧️": "Cloud with Rain", "⛈️": "Cloud with Lightning and Rain", "🌩️": "Cloud with Lightning", "🌨️": "Cloud with Snow",
+  "❄️": "Snowflake", "☃️": "Snowman", "⛄": "Snowman Without Snow", "🌬️": "Wind Face", "💨": "Dash Symbol", "🌪️": "Tornado", "🌫️": "Fog",
+  "🌈": "Rainbow", "☀️": "Sun", "☁️": "Cloud", "⛅": "Sun Behind Cloud", "⛈️": "Thunder Cloud and Rain", "🌦️": "Sun Behind Rain Cloud",
+  "🌧️": "Cloud with Rain", "🌩️": "Cloud with Lightning", "🌪️": "Tornado", "🌵": "Cactus",
+
   // Objects
-  "⌚": "Watch",
-  "📱": "Mobile Phone",
-  "📲": "Mobile Phone with Arrow",
-  "💻": "Laptop",
-  "⌨️": "Keyboard",
-  "🖥️": "Desktop Computer",
-  "🖱️": "Computer Mouse",
-  "🖨️": "Printer",
-  "🕹️": "Joystick",
-  "💽": "Computer Disk",
-  "💾": "Floppy Disk",
-  "💿": "Optical Disk",
-  "📀": "DVD",
-  "📷": "Camera",
-  "📸": "Camera with Flash",
-  "📹": "Video Camera",
-  "🎥": "Movie Camera",
-  "📽️": "Film Projector",
-  "🎞️": "Film Frames",
-  "📞": "Telephone Receiver",
-  "☎️": "Telephone",
-  "📟": "Pager",
-  "📠": "Fax Machine",
-  "📺": "Television",
-  "📻": "Radio",
-  "🎙️": "Studio Microphone",
-  "🎚️": "Level Slider",
-  "🎛️": "Control Knobs",
-  "🧭": "Compass",
-  "⏱️": "Stopwatch",
-  "⏲️": "Timer Clock",
-  "⏰": "Alarm Clock",
-  "🕰️": "Mantelpiece Clock",
-  
+  "⌚": "Watch", "📱": "Mobile Phone", "📲": "Mobile Phone with Arrow", "💻": "Laptop", "⌨️": "Keyboard", "🖥️": "Desktop Computer",
+  "🖱️": "Computer Mouse", "🖨️": "Printer", "🕹️": "Joystick", "💽": "Computer Disk", "💾": "Floppy Disk", "💿": "Optical Disk",
+  "📀": "DVD", "📷": "Camera", "📸": "Camera with Flash", "📹": "Video Camera", "🎥": "Movie Camera", "📽️": "Film Projector",
+  "🎞️": "Film Frames", "📞": "Telephone Receiver", "☎️": "Telephone", "📟": "Pager", "📠": "Fax Machine", "📺": "Television",
+  "📻": "Radio", "🎙️": "Studio Microphone", "🎚️": "Level Slider", "🎛️": "Control Knobs", "🧭": "Compass", "⏱️": "Stopwatch",
+  "⏲️": "Timer Clock", "⏰": "Alarm Clock", "🕰️": "Mantelpiece Clock",
+
   // Symbols
-  "💯": "Hundred Points",
-  "🔢": "Input Numbers",
-  "🔣": "Input Symbols",
-  "🔤": "Input Latin Letters",
-  "🅰️": "A Button (Blood Type)",
-  "🆎": "AB Button (Blood Type)",
-  "🅱️": "B Button (Blood Type)",
-  "🆑": "CL Button",
-  "🆒": "Cool Button",
-  "🆓": "Free Button",
-  "ℹ️": "Information",
-  "🆔": "ID Button",
-  "Ⓜ️": "Circled M",
-  "🆕": "New Button",
-  "🆖": "NG Button",
-  "🅾️": "O Button (Blood Type)",
-  "🆗": "OK Button",
-  "🅿️": "P Button",
-  "🆘": "SOS Button",
-  "🆙": "Up! Button",
-  "🆚": "Vs Button",
-  // Flags
-  "🏁": "Chequered Flag",
-  "🚩": "Triangular Flag",
-  "🎌": "Crossed Flags",
-  "🏴": "Black Flag",
-  "🏳️": "White Flag",
-  "🏳️‍🌈": "Rainbow Flag",
-  "🏳️‍⚧️": "Transgender Flag",
-  "🏴‍☠️": "Pirate Flag"
+  "💯": "Hundred Points", "🔢": "Input Numbers", "🔣": "Input Symbols", "🔤": "Input Latin Letters", "🅰️": "A Button (Blood Type)",
+  "🆎": "AB Button (Blood Type)", "🅱️": "B Button (Blood Type)", "🆑": "CL Button", "🆒": "Cool Button", "🆓": "Free Button",
+  "ℹ️": "Information", "🆔": "ID Button", "Ⓜ️": "Circled M", "🆕": "New Button", "🆖": "NG Button", "🅾️": "O Button (Blood Type)",
+  "🆗": "OK Button", "🅿️": "P Button", "🆘": "SOS Button", "🆙": "Up! Button", "🆚": "Vs Button",
+
+  // Flags (partial list)
+  "🏁": "Chequered Flag", "🚩": "Triangular Flag", "🎌": "Crossed Flags", "🏴": "Black Flag", "🏳️": "White Flag", "🏳️‍🌈": "Rainbow Flag",
+  "🏳️‍⚧️": "Transgender Flag", "🏴‍☠️": "Pirate Flag"
 };
 
 const selectedCategory = ref(null);
@@ -370,57 +190,37 @@ const selectedEmojis = ref([]);
 const recentEmojis = ref([]);
 const maxRecentEmojis = 20;
 
-// Expanded emoji categories
+// Comprehensive emoji categories based on image
 const emojiCategories = ref([
   {
     name: "Smileys & Emotion",
     icon: "😊",
-    emojis: ["😀", "😁", "😂", "🤣", "😃", "😄", "😅", "😆", "😉", "😊", "😋", "😎", "😍", "🥰", "😘", "🥲", "😗", "😙", "🥹", "😚", "🙂", "🫠", "🙃", "😐", "😑", "😶", "🫥", "😶‍🌫️", "😏", "😒", "🙄", "😬", "😮‍💨", "🤥", "😌", "😔", "😪"]
+    emojis: ["😀", "😁", "😂", "🤣", "😃", "😄", "😅", "😆", "😉", "😊", "😋", "😎", "😍", "🥰", "😘", "🥲", "😗", "😙", "🥹", "😚", "🙂", "🫠", "🙃", "😐", "😑", "😶", "🫥", "😶‍🌫️", "😏", "😒", "🙄", "😬", "😮‍💨", "🤥", "😌", "😔", "😪", "🤤", "😴", "😷", "🤒", "🤕", "🤢", "🤮", "🤧", "🥳", "🥶", "🥵", "🥴", "😵", "🤯", "😱", "😨", "😰", "😥", "😓", "🤗", "🤔", "🤐", "🤨", "😕", "😟", "🙁", "☹️", "😣", "😖", "😫", "😩", "🥺", "😢", "😭", "😤", "😡", "😠", "🤬", "😈", "👿", "💀", "☠️", "💩", "🤡", "👹", "👺", "👻", "👽", "👾", "🤖", "😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾"]
   },
   {
-    name: "People & Body",
+    name: "Gestures & People",
     icon: "👋",
-    emojis: ["👋", "🤚", "🖐️", "✋", "🖖", "👌", "🤌", "🤏", "✌️", "🤞", "🫰", "🤟", "🤘", "🤙", "👈", "👉", "👆", "🖕", "👇", "☝️", "👍", "👎", "✊", "👊", "🤛", "🤜", "👏", "🙌", "👐", "🤲", "🤝", "🙏"]
+    emojis: ["👋", "🤚", "🖐️", "✋", "🖖", "👌", "🤌", "🤏", "✌️", "🤞", "🫰", "🤟", "🤘", "🤙", "👈", "👉", "👆", "🖕", "👇", "☝️", "👍", "👎", "✊", "👊", "🤛", "🤜", "👏", "🙌", "👐", "🤲", "🤝", "🙏", "✍️", "💅", "🤳", "💪", "🦾", "🦿", "🦵", "🦶", "👂", "👃", "🧠", "🫀", "🫁", "🦷", "👀", "👁️", "👅", "👄", "🦴", "👶", "🧒", "👦", "👧", "🧑", "👨", "👩", "🧔", "👴", "👵", "👲", "👳", "👮", "👷", "💂", "🕵️", "🤴", "🤵", "👰", "🤰", "🤱", "👼", "🎅", "🤶", "🦸", "🦹", "🧙", "🧚", "🧛", "🧜", "🧝", "🧞", "🧟", "🧑‍⚕️", "🧑‍🎓", "🧑‍🏫", "🧑‍⚖️", "🧑‍🌾", "🧑‍🍳", "🧑‍💼", "🧑‍🔧", "🧑‍🏭", "🧑‍💻", "🧑‍🎤", "🧑‍🎬", "🧑‍🎨", "🧑‍✈️", "🧑‍🚀", "🧑‍🚒", "👨‍👩‍👧", "👨‍👩‍👧‍👦", "👨‍👩‍👧‍👧", "👨‍👩‍👦‍👦"]
   },
   {
-    name: "Hearts & Love",
+    name: "Hearts, Clothes, Activities",
     icon: "❤️",
-    emojis: ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "❤️‍🔥", "❤️‍🩹", "💔", "💝", "💘", "💖", "💗", "💓", "💞", "💕", "💌"]
+    emojis: ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "❤️‍🔥", "❤️‍🩹", "💔", "💝", "💘", "💖", "💗", "💓", "💞", "💕", "💌", "👚", "👕", "👖", "🧥", "🥼", "👔", "👗", "👙", "👘", "🥻", "🩱", "🩲", "🩳", "🥿", "👞", "👟", "🥾", "🥳", "🎩", "🧢", "👑", "🎓", "🧳", "⛳", "🏀", "🏈", "⚽", "🏐", "🏉", "🎾", "🎱", "🏓", "🏸", "🥊", "🥋", "🎽", "🎿", "⛸️", "🎣", "🎧", "🎤", "🎸", "🎹", "🎺", "🎻", "🥁", "🎷"]
   },
   {
-    name: "Food & Drink",
+    name: "Foods, Drinks",
     icon: "🍎",
-    emojis: ["🍎", "🍏", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🫐", "🍈", "🍒", "🍑", "🥭", "🍍", "🥥", "🥝", "🍅", "🍆", "🥑", "🌮", "🌯", "🍔", "🍟", "🍕", "🥪", "🥙", "🧆", "🥚", "🍳", "🥞", "🧇", "🍞", "☕", "🍵", "🍶", "🍾", "🍷", "🍸", "🍹"]
+    emojis: ["🍎", "🍏", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🫐", "🍈", "🍒", "🍑", "🥭", "🍍", "🥥", "🥝", "🍅", "🍆", "🥑", "🥦", "🥕", "🌽", "🌶️", "🥒", "🥬", "🥔", "🍠", "🥐", "🥖", "🥨", "🥯", "🥞", "🧀", "🍖", "🍗", "🥩", "🥓", "🍔", "🍟", "🍕", "🌭", "🥪", "🌮", "🌯", "🥙", "🥚", "🍳", "🥘", "🍲", "🥣", "🥗", "🍿", "🧈", "🧂", "🥫", "🍱", "🍘", "🍙", "🍚", "🍛", "🍜", "🍝", "🍠", "🍢", "🍣", "🍤", "🍥", "🥮", "🍡", "🥟", "🥠", "🥡", "🍮", "🍦", "🍧", "🍨", "🍩", "🍪", "🎂", "🍰", "🧁", "🥧", "🍫", "🍬", "🍭", "🍮", "🍯", "🍼", "🥛", "☕", "🍵", "🍶", "🍾", "🍷", "🍸", "🍹", "🍺", "🍻", "🥂", "🥃", "🥤", "🧃", "🧉", "🧋"]
   },
   {
-    name: "Animals & Nature",
+    name: "Animals",
     icon: "🐶",
-    emojis: ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐷", "🐵", "🙈", "🙉", "🙊", "🐔", "🐧", "🐦", "🐤", "🐣", "🦅", "🦆", "🦉", "🦇", "🐺", "🐗", "🐴", "🦄", "🐝", "🪱", "🐛", "🦋", "🐌"]
+    emojis: ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐷", "🐵", "🙈", "🙉", "🙊", "🐒", "🐴", "🦄", "🐝", "🐛", "🦋", "🐌", "🐞", "🐜", "🪲", "🪳", "🕷️", "🕸️", "🦂", "🦟", "🪰", "🪱", "🦠", "🐢", "🐍", "🦎", "🦖", "🦕", "🐙", "🦑", "🦐", "🦞", "🦀", "🐡", "🐠", "🐟", "🐬", "🦈", "🐳", "🐋", "🐊", "🐅", "🐆", "🦓", "🦍", "🐘", "🦏", "🦛", "🐪", "🐫", "🦒", "🐃", "🐂", "🐄", "🐎", "🐖", "🐏", "🐑", "🐐", "🐓", "🕊️", "🐕", "🐩", "🐈", "🐇", "🦃", "🪿", "🐔", "🐣", "🐤", "🐥", "🦅", "🦆", "🦢", "🦚", "🦜", "🦡", "🦦", "🦥", "🦨", "🐁", "🐀", "🐹", "🦔", "🐿️", "🦇", "🐺", "🐗", "🐴", "🦌", "🦄"]
   },
   {
-    name: "Plants & Flowers",
+    name: "Plants, Nature, Weather",
     icon: "🌱",
-    emojis: ["🌱", "🪴", "🌿", "☘️", "🍀", "🍁", "🍂", "🍃", "🌵", "🌴", "🌳", "🌲", "🪵", "🌷", "🌹", "🥀", "🌺", "🌸", "🌼", "🌻"]
-  },
-  {
-    name: "Travel & Places",
-    icon: "🚗",
-    emojis: ["🚗", "🚕", "🚙", "🚌", "🚎", "🏎️", "🚓", "🚑", "🚒", "🚚", "🚛", "🚜", "🛵", "🏍️", "🚲", "✈️", "🚀", "🛸", "🚁", "⛵", "🚢", "🏠", "🏡", "🏢", "🏣", "🏤", "🏥", "🏦", "🏨", "🏫", "🏛️", "⛪", "🕌", "🕍", "🏙️"]
-  },
-  {
-    name: "Objects",
-    icon: "⌚",
-    emojis: ["⌚", "📱", "📲", "💻", "⌨️", "🖥️", "🖱️", "🖨️", "🕹️", "💽", "💾", "💿", "📀", "📷", "📸", "📹", "🎥", "📽️", "🎞️", "📞", "☎️", "📟", "📠", "📺", "📻", "🎙️", "🎚️", "🎛️", "🧭", "⏱️", "⏲️", "⏰", "🕰️"]
-  },
-  {
-    name: "Symbols",
-    icon: "💯",
-    emojis: ["💯", "🔢", "🔣", "🔤", "🅰️", "🆎", "🅱️", "🆑", "🆒", "🆓", "ℹ️", "🆔", "Ⓜ️", "🆕", "🆖", "🅾️", "🆗", "🅿️", "🆘", "🆙", "🆚", "🈁", "🈂️", "🈷️", "🈶", "🈯", "🉐", "🈹", "🈚", "🈲", "🉑", "🈸", "🈴", "🈳", "㊗️", "㊙️", "🈺", "🈵"]
-  },
-  {
-    name: "Flags",
-    icon: "🏁",
-    emojis: ["🏁", "🚩", "🎌", "🏴", "🏳️", "🏳️‍🌈", "🏳️‍⚧️", "🏴‍☠️"]
+    emojis: ["🌱", "🪴", "🌿", "☘️", "🍀", "🍁", "🍂", "🍃", "🌵", "🌴", "🌳", "🌲", "🪵", "🌷", "🌹", "🥀", "🌺", "🌸", "🌼", "🌻", "🌞", "🌝", "🌚", "🌛", "🌜", "🌕", "🌖", "🌗", "🌘", "🌑", "🌒", "🌓", "🌔", "🌙", "🌟", "⭐", "🌠", "🌌", "☄️", "🌍", "🌎", "🌏", "🌐", "🪐", "💥", "🌋", "🌊", "🌧️", "⛈️", "🌩️", "🌨️", "❄️", "☃️", "⛄", "🌬️", "💨", "🌪️", "🌫️", "🌈", "☀️", "☁️", "⛅", "⛈️", "🌦️", "🌧️", "🌩️", "🌪️", "🌵"]
   }
 ]);
 
@@ -473,22 +273,14 @@ const saveRecentEmojis = () => {
 
 // Add emoji to recent list
 const addToRecent = (emoji) => {
-  // Remove the emoji if it already exists (to move it to the front)
   recentEmojis.value = recentEmojis.value.filter(e => e !== emoji);
-  
-  // Add to the front of the array
   recentEmojis.value.unshift(emoji);
-  
-  // Limit the number of recent emojis
   if (recentEmojis.value.length > maxRecentEmojis) {
     recentEmojis.value = recentEmojis.value.slice(0, maxRecentEmojis);
   }
-  
   saveRecentEmojis();
 };
 
-// Call loadRecentEmojis when component mounts
-// In Vue 3 setup, this would typically use onMounted, but we'll use this approach for simplicity
 loadRecentEmojis();
 
 const toggleSelection = (emoji) => {
@@ -501,6 +293,7 @@ const toggleSelection = (emoji) => {
 
 const copyToClipboard = (text) => {
   navigator.clipboard.writeText(text).then(() => {
+    // Auto-copy handled by selection
   }).catch((err) => {
     console.error('Failed to copy: ', err);
   });
@@ -532,9 +325,7 @@ const copyAndSelect = async (emoji) => {
   if (!selectedEmojis.value.includes(emoji)) {
     selectedEmojis.value.push(emoji);
   }
-
   addToRecent(emoji);
-
   try {
     await navigator.clipboard.writeText(selectedEmojis.value.join(' '));
     console.log('Copied:', selectedEmojis.value.join(' '));
@@ -542,39 +333,46 @@ const copyAndSelect = async (emoji) => {
     console.error('Failed to copy:', err);
   }
 };
+
+// Auto-copy when selection changes
+watch(selectedEmojis, (newValue) => {
+  if (newValue.length > 0) {
+    copyToClipboard(newValue.join(' '));
+  }
+}, { immediate: true });
 </script>
 
 <style scoped>
 .container {
-  @apply flex p-4 max-w-full mx-auto bg-gray-100;
+  @apply flex p-4 max-w-full mx-auto bg-gray-100 h-screen;
 }
 
 .navbar {
-  @apply bg-gray-200 p-2 rounded-l-md h-auto w-16 flex-col space-y-2;
+  @apply bg-blue-800 text-white p-2 rounded-l-md w-12 flex-col space-y-1 overflow-y-auto;
 }
 
 .nav-item {
-  @apply px-3 py-1 rounded text-gray-700 hover:bg-gray-300 w-full flex justify-center cursor-pointer;
+  @apply px-2 py-1 rounded text-white hover:bg-blue-700 w-full flex justify-center cursor-pointer text-xl;
 }
 
 .nav-item.active {
-  @apply bg-gray-400 text-black;
+  @apply bg-blue-600;
 }
 
 .nav-icon {
-  @apply text-xl;
+  @apply text-2xl;
 }
 
 .emoji-container {
-  @apply flex-1 p-2 bg-white rounded-r-md ml-2;
+  @apply flex-1 p-2 bg-white rounded-r-md ml-2 overflow-y-auto;
 }
 
 .search-container {
-  @apply mb-4 bg-white p-2 rounded-t-md;
+  @apply mb-2 bg-white p-2 rounded-t-md;
 }
 
 .search-input {
-  @apply w-full p-2 focus:outline-none text-gray-700 border border-gray-300 rounded-md;
+  @apply w-full p-2 text-sm focus:outline-none text-gray-700 border border-gray-300 rounded-md;
 }
 
 .category {
@@ -586,11 +384,11 @@ const copyAndSelect = async (emoji) => {
 }
 
 .emoji-grid {
-  @apply grid grid-cols-12 gap-1;
+  @apply grid grid-cols-12 gap-0.5;
 }
 
 .emoji-item {
-  @apply text-xl cursor-pointer p-1 rounded hover:bg-gray-200 text-center;
+  @apply text-xl cursor-pointer p-0.5 rounded hover:bg-gray-200 text-center;
 }
 
 .emoji-item.selected {
@@ -598,7 +396,7 @@ const copyAndSelect = async (emoji) => {
 }
 
 .recent-container {
-  @apply mt-4 border-t pt-2;
+  @apply mt-2 border-t pt-2;
 }
 
 .recent-title {
@@ -610,18 +408,26 @@ const copyAndSelect = async (emoji) => {
 }
 
 .footer {
-  @apply flex justify-between items-center p-2 bg-white text-white rounded-md mt-2;
+  @apply flex justify-between items-center p-2 bg-blue-800 text-white rounded-b-md mt-2;
 }
 
 .selected-text {
-  @apply text-sm font-semibold text-gray-700; 
+  @apply text-sm font-semibold text-white overflow-x-auto;
+}
+
+.auto-copy {
+  @apply text-xs italic ml-1;
+}
+
+.button-group {
+  @apply flex space-x-2;
 }
 
 .copy-button {
-  @apply bg-blue-500 px-3 py-1 rounded hover:bg-blue-700 text-white text-sm cursor-pointer;
+  @apply bg-blue-600 px-2 py-1 rounded hover:bg-blue-700 text-white text-sm cursor-pointer;
 }
 
 .clear-button {
-  @apply bg-red-500 px-3 py-1 rounded hover:bg-red-700 text-white text-sm cursor-pointer;
+  @apply bg-blue-600 px-2 py-1 rounded hover:bg-blue-700 text-white text-sm cursor-pointer;
 }
 </style>
