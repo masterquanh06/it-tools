@@ -253,9 +253,9 @@ function filterResults(type: "live" | "die") {
 
 .input-textarea {
   width: 100%;
-  background-color: #e5e7eb;
+  background-color: #fff;
   color: #000;
-  border: 1px solid #555;
+  border: 1px solid #a0aec0;
   border-radius: 4px;
   padding: 10px;
   resize: none;
@@ -366,8 +366,8 @@ button:disabled {
   width: 100%;
   height: 300px;
   resize: none;
-  background-color: #e5e7eb;
-  border: 1px solid #555;
+  background-color: #fff;
+  border: 1px solid #a0aec0;
   color: #000;
   padding: 10px;
   border-radius: 4px;
