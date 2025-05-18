@@ -214,7 +214,7 @@ function filterResults(type: "live" | "die") {
 <style scoped>
 .check-live-uid {
   padding: 16px;
-  background-color: #2f2f2f;
+  background-color: #f7fafc;
   color: #fff;
   font-family: Arial, sans-serif;
   min-height: 100vh;
@@ -253,8 +253,8 @@ function filterResults(type: "live" | "die") {
 
 .input-textarea {
   width: 100%;
-  background-color: #333;
-  color: #fff;
+  background-color: #e5e7eb;
+  color: #000;
   border: 1px solid #555;
   border-radius: 4px;
   padding: 10px;
@@ -326,10 +326,9 @@ button:disabled {
 
 .result-box {
   flex: 1;
-  background-color: #333;
+  background-color: #f7fafc;
   padding: 10px;
   border-radius: 4px;
-  border: 1px solid #555;
 }
 
 .result-header {
@@ -367,9 +366,9 @@ button:disabled {
   width: 100%;
   height: 300px;
   resize: none;
-  background-color: #444;
+  background-color: #e5e7eb;
   border: 1px solid #555;
-  color: #fff;
+  color: #000;
   padding: 10px;
   border-radius: 4px;
   font-size: 14px;
