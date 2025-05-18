@@ -1,11 +1,11 @@
 <script lang="ts" setup>
-import { useRoute } from 'vue-router';
-import { useHead } from '@vueuse/head';
 import type { HeadObject } from '@vueuse/head';
+import { useHead } from '@vueuse/head';
+import { useRoute } from 'vue-router';
 
-import BaseLayout from './base.layout.vue';
 import FavoriteButton from '@/components/FavoriteButton.vue';
 import type { Tool } from '@/tools/tools.types';
+import BaseLayout from './base.layout.vue';
 
 const route = useRoute();
 
@@ -52,13 +52,14 @@ const toolDescription = computed<string>(() => t(`tools.${i18nKey.value}.descrip
       </div>
     </div>
 
-    <div class="tool-content">
+    <div class="tool-content ">
       <slot />
     </div>
   </BaseLayout>
 </template>
 
 <style lang="less" scoped>
+
 .tool-content {
   display: flex;
   flex-direction: row;
