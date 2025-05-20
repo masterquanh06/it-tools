@@ -160,6 +160,8 @@ function filterResults(type: "live" | "die") {
         :disabled="loading"
         rows="15"
         class="input-textarea"
+        clearable
+        raw-text
       ></textarea>
 
       <div class="options">
@@ -237,7 +239,7 @@ function filterResults(type: "live" | "die") {
 .label {
   font-weight: bold;
   margin-right: 8px;
-  color: #ccc;
+  color: #686a6c;
 }
 
 .uid-count {
@@ -261,6 +263,7 @@ function filterResults(type: "live" | "die") {
   resize: none;
   font-size: 14px;
   height: 300px;
+  font-family: v-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
 .input-textarea:focus {
@@ -286,7 +289,7 @@ function filterResults(type: "live" | "die") {
   display: flex;
   align-items: center;
   font-size: 14px;
-  color: #ccc;
+  color: #686a6c;
 }
 
 .checkbox-label input {

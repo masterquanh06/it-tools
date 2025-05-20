@@ -1,6 +1,6 @@
 <template>
     <div class="container">
-        <h1 class="title">Get UID from Facebook URL</h1>
+        <h1 class="title">Get ID from Facebook URL</h1>
         <div class="input-container">
             <label>Input Facebook Names (each line is a Name):</label>
             <textarea v-model="inputUrls" placeholder="https://www.facebook.com/username" rows="4" class="input-textarea"></textarea>
@@ -9,7 +9,7 @@
         <div class="result-container">
             <h2 class="result-title">Result</h2>
             <div class="result-section">
-                <label>Extracted UIDs | {{ results.filter(r => r.uid).length }}</label>
+                <label>Extracted IDs | {{ results.filter(r => r.uid).length }}</label>
                 <textarea v-model="extractedText" readonly class="result-textarea"></textarea>
                 <button @click="copyExtracted" class="copy-button">Copy UIDs</button>
             </div>
@@ -135,7 +135,7 @@ label {
 }
 
 .input-textarea {
-    @apply w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500;
+    @apply w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-sans;
 }
 
 .extract-button {

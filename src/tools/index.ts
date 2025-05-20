@@ -91,6 +91,9 @@ import { tool as yamlToJson } from './yaml-to-json-converter';
 import { tool as yamlToToml } from './yaml-to-toml';
 import { tool as yamlViewer } from './yaml-viewer';
 import { tool as getIconsFb } from './get-icons-fb';
+import { tool as scanMemberGroup } from './scan-member-group';
+import { tool as scanFollowListTiktok } from './scan-follow-list-tt';
+import { tool as scanCommentListTiktok } from './scan-comment-list-tt';
 export const toolsByCategory: ToolCategory[] = [
   {
     name: 'Facebook',
@@ -99,6 +102,14 @@ export const toolsByCategory: ToolCategory[] = [
       getLiveUID, 
       result2Fa,
       getIconsFb,
+      scanMemberGroup,
+    ],
+  },
+  {
+    name: 'Tiktok', 
+    components: [
+      scanFollowListTiktok,
+      scanCommentListTiktok,
     ],
   },
   {

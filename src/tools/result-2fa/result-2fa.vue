@@ -1,7 +1,7 @@
 <template>
     <div class="container">
         <div class="input-group">
-            <label>* 2FA Secret</label>
+            <label class="title-2fa">* 2FA Secret</label>
             <textarea v-model="secrets" placeholder="Enter your 2FA secrets" rows="4" class="textarea"></textarea>
             <button @click="submitTokens" :disabled="isLoading">
                 <span v-if="isLoading">Processing...</span>
@@ -9,7 +9,7 @@
             </button>
         </div>
         <div class="input-group">
-            <label>* 2FA Code 2-step verification code</label>
+            <label class = "title-2fa">* 2FA Code 2-step verification code</label>
             <textarea v-model="verificationCodes" readonly class="textarea" rows="4"></textarea>
             <button @click="copyCode">Copy</button>
         </div>
@@ -95,7 +95,11 @@ label {
 }
 
 .textarea {
-    @apply p-2.5 w-full border border-gray-300 rounded-md box-border text-base resize-none;
+    @apply p-2.5 w-full border border-gray-300 text-sm font-sans;
+}
+
+.title-2fa {
+   @apply  text-base font-medium;
 }
 
 button {
@@ -109,4 +113,6 @@ button:disabled {
 button:hover:not(:disabled) {
     @apply bg-blue-700;
 }
+
+
 </style>
